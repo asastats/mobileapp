@@ -1,0 +1,158 @@
+import 'listed.dart';
+import 'transaction.dart';
+import 'urls.dart';
+
+class NftValues {
+  double? value;
+  String? collection;
+  int? amount;
+  List<Nfts>? nfts;
+
+  NftValues({this.value, this.collection, this.amount, this.nfts});
+
+  NftValues.fromJson(Map<String, dynamic> json) {
+    value = (json['value'] ?? 0).toDouble();
+    collection = json['collection'];
+    amount = json['amount'];
+    if (json['nfts'] != null) {
+      nfts = <Nfts>[];
+      json['nfts'].forEach((v) {
+        nfts!.add(Nfts.fromJson(v ?? {}));
+      });
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['value'] = value;
+    data['collection'] = collection;
+    data['amount'] = amount;
+    if (nfts != null) {
+      data['nfts'] = nfts!.map((v) => v.toJson()).toList();
+    }
+    return data;
+  }
+}
+
+class Nfts {
+  int? value;
+  int? id;
+  int? amount;
+  Nft? nft;
+  double? price;
+  String? creator;
+
+  Nfts({this.value, this.id, this.amount, this.nft, this.price, this.creator});
+
+  Nfts.fromJson(Map<String, dynamic> json) {
+    value = json['value'];
+    id = json['id'];
+    amount = json['amount'];
+    nft = json['nft'] != null ? Nft.fromJson(json['nft'] ?? {}) : null;
+    price = json['price'];
+    creator = json['creator'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['value'] = value;
+    data['id'] = id;
+    data['amount'] = amount;
+    if (nft != null) {
+      data['nft'] = nft!.toJson();
+    }
+    data['price'] = price;
+    data['creator'] = creator;
+    return data;
+  }
+}
+
+class Nft {
+  int? id;
+  String? name;
+  String? unit;
+  double? total;
+  String? collection;
+  Urls? urls;
+  String? path;
+  String? tpath;
+  Listed? listed;
+  Transaction? last;
+  Transaction? max;
+  Transaction? floor;
+  Map<String, dynamic>? attrs;
+  String? title;
+  String? desc;
+
+  Nft(
+      {this.id,
+      this.name,
+      this.unit,
+      this.total,
+      this.collection,
+      this.urls,
+      this.path,
+      this.tpath,
+      this.listed,
+      this.last,
+      this.max,
+      this.floor,
+      this.attrs,
+      this.title,
+      this.desc});
+
+  Nft.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    name = json['name'];
+    unit = json['unit'];
+    total = double.parse("${json['total']}");
+    collection = json['collection'];
+    urls = json['urls'] != null ? Urls.fromJson(json['urls'] ?? {}) : null;
+    path = json['path'];
+    tpath = json['tpath'];
+    listed = Listed.fromJson(json['listed'] ?? {});
+    last =
+        json['last'] != null ? Transaction.fromJson(json['last'] ?? {}) : null;
+    max = json['max'] != null ? Transaction.fromJson(json['max'] ?? {}) : null;
+    floor = json['floor'] != null
+        ? Transaction.fromJson(json['floor'] ?? {})
+        : null;
+    attrs = json['attrs'] != null
+        ? Map<String, dynamic>.from(json['attrs'] ?? {})
+        : null;
+    title = json['title'];
+    desc = json['desc'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
+    data['name'] = name;
+    data['unit'] = unit;
+    data['total'] = total;
+    data['collection'] = collection;
+    if (urls != null) {
+      data['urls'] = urls!.toJson();
+    }
+    data['path'] = path;
+    data['tpath'] = tpath;
+    if (listed != null) {
+      data['listed'] = listed!.toJson();
+    }
+    if (last != null) {
+      data['last'] = last!.toJson();
+    }
+    if (max != null) {
+      data['max'] = max!.toJson();
+    }
+    if (floor != null) {
+      data['floor'] = floor!.toJson();
+    }
+    if (attrs != null) {
+      data['attrs'] = attrs!;
+    }
+    data['title'] = title;
+    data['desc'] = desc;
+    return data;
+  }
+}
