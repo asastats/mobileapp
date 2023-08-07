@@ -1,8 +1,8 @@
-        .DS_Store
-        .dart_tool/
-        .env
-        .flutter-plugins
-        .flutter-plugins-dependencies
-        assets/json/octorand.json
-        build/
-        lib/.errors
+.DS_Store
+.dart_tool/
+.env
+.flutter-plugins
+.flutter-plugins-dependencies
+assets/json/octorand.json
+build/
+lib/.errors
