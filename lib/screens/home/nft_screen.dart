@@ -309,7 +309,10 @@ class _NftScreenState extends State<NftScreen> {
             isExpanded: (asaId == data.collection.toString()),
             crossAxisCount: crossAxisCount,
             borderColor: color,
-            title: "${data.amount ?? 0}  ${data.collection ?? ""}",
+            // title: "${data.amount ?? 0}  ${data.collection ?? ""}",
+            title: AppConstants.removeDecimalZeroFormat(data.amount ?? 0) +
+                " " +
+                (data.collection ?? ""),
             images: [
               ...?data.nfts?.map<String>((e) => e.nft?.tpath ?? "").toList()
             ],

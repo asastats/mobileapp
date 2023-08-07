@@ -80,7 +80,7 @@ class ASAProvider with ChangeNotifier {
             apiRegisterResponse.response?.data.toString() ?? "Empty Data",
             apiRegisterResponse.response?.data);
       } catch (e) {
-        debugPrint("Unable to parse API response");
+        debugPrint("Unable to parse API response" + e.toString());
         responseModel = ResponseModel(false, "Unable to parse API response",
             apiRegisterResponse.response?.data);
       }
@@ -186,8 +186,8 @@ class ASAProvider with ChangeNotifier {
                                     .containsElement(searchText) ??
                                 false) ||
                             (element.nft?.urls
-                                    ?.toJson()
-                                    .containsElement(searchText) ??
+                                    ?.
+                                    containsElement(searchText) ??
                                 false) ||
                             (element.nft?.listed
                                     ?.toJson()
@@ -234,7 +234,7 @@ class ASAProvider with ChangeNotifier {
                   .toLowerCase()
                   .contains(searchText) ??
               false) ||
-          (element.nft?.urls?.toJson().containsElement(searchText) ?? false) ||
+          (element.nft?.urls?.containsElement(searchText) ?? false) ||
           (element.nft?.listed?.toJson().containsElement(searchText) ??
               false) ||
           (element.nft?.last?.toJson().containsElement(searchText) ?? false) ||

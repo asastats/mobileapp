@@ -5,7 +5,7 @@ import 'urls.dart';
 class NftValues {
   double? value;
   String? collection;
-  int? amount;
+  double? amount;
   List<Nfts>? nfts;
 
   NftValues({this.value, this.collection, this.amount, this.nfts});
@@ -13,7 +13,7 @@ class NftValues {
   NftValues.fromJson(Map<String, dynamic> json) {
     value = (json['value'] ?? 0).toDouble();
     collection = json['collection'];
-    amount = json['amount'];
+    amount = json['amount'].toDouble();
     if (json['nfts'] != null) {
       nfts = <Nfts>[];
       json['nfts'].forEach((v) {
@@ -37,7 +37,7 @@ class NftValues {
 class Nfts {
   int? value;
   int? id;
-  int? amount;
+  num? amount;
   Nft? nft;
   double? price;
   String? creator;
@@ -47,7 +47,12 @@ class Nfts {
   Nfts.fromJson(Map<String, dynamic> json) {
     value = json['value'];
     id = json['id'];
-    amount = json['amount'];
+    try {
+      amount = json['amount'];
+    } catch (e) {
+      print("Cant parse amount" + e.toString());
+    }
+    // amount = json['amount'];
     nft = json['nft'] != null ? Nft.fromJson(json['nft'] ?? {}) : null;
     price = json['price'];
     creator = json['creator'];
@@ -71,9 +76,9 @@ class Nft {
   int? id;
   String? name;
   String? unit;
-  double? total;
+  int? total;
   String? collection;
-  Urls? urls;
+  Map<String, dynamic>? urls;
   String? path;
   String? tpath;
   Listed? listed;
@@ -104,10 +109,10 @@ class Nft {
   Nft.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     name = json['name'];
-    unit = json['unit'];
-    total = double.parse("${json['total']}");
+    unit = json['unit'] ?? '';
+    total = json['total'];
     collection = json['collection'];
-    urls = json['urls'] != null ? Urls.fromJson(json['urls'] ?? {}) : null;
+    urls = json['urls'] != null ? json['urls'] ?? {} : null;
     path = json['path'];
     tpath = json['tpath'];
     listed = Listed.fromJson(json['listed'] ?? {});
@@ -128,11 +133,13 @@ class Nft {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['id'] = id;
     data['name'] = name;
-    data['unit'] = unit;
+    if (unit != null) {
+      data['unit'] = unit;
+    }
     data['total'] = total;
     data['collection'] = collection;
     if (urls != null) {
-      data['urls'] = urls!.toJson();
+      data['urls'] = urls!;
     }
     data['path'] = path;
     data['tpath'] = tpath;

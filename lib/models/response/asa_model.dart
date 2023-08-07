@@ -13,7 +13,7 @@ class ASAModel {
   Ratiochart? ratioChart;
   Ratiochart? asaChart;
   Ratiochart? nftChart;
-  String? message;
+  String? warning;
   String? information;
   Map<String, String>? colors;
   Map<String, String>? nftColors;
@@ -29,7 +29,7 @@ class ASAModel {
     this.colors,
     this.nftColors,
     this.notEval,
-    this.message,
+    this.warning,
     this.information,
   });
 
@@ -44,7 +44,7 @@ class ASAModel {
     Ratiochart? nftChart,
     Map<String, String>? colors,
     Map<String, String>? nftColors,
-    String? message,
+    String? warning,
     String? information,
   }) {
     return ASAModel(
@@ -58,7 +58,7 @@ class ASAModel {
       colors: colors ?? this.colors,
       nftColors: nftColors ?? this.nftColors,
       notEval: notEval ?? this.notEval,
-      message: message ?? this.message,
+      warning: warning ?? this.warning,
       information: information ?? this.information,
     );
   }
@@ -99,7 +99,7 @@ class ASAModel {
     nftColors = json['nft_colors'] != null
         ? Map<String, String>.from(json['nft_colors'] ?? {})
         : null;
-    message = json['message'];
+    warning = json['warning'];
     information = json['information'];
   }
 
@@ -133,8 +133,8 @@ class ASAModel {
     if (nftColors != null) {
       data['nft_colors'] = nftColors!;
     }
-    if (message != null) {
-      data['message'] = message!;
+    if (warning != null) {
+      data['warning'] = warning!;
     }
     if (information != null) {
       data['information'] = information!;
