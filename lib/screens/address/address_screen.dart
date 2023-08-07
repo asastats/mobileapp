@@ -111,25 +111,26 @@ class _AddressScreenState extends State<AddressScreen> {
                     ),
                   ),
                   Positioned(
-                    // top: (212 - 21).h,
-                    bottom: 0,
-                    left: Dimensions.PADDING_SIZE_DEFAULT +
-                        MediaQuery.of(context).padding.left,
-                    right: Dimensions.PADDING_SIZE_DEFAULT +
-                        MediaQuery.of(context).padding.right,
-                    child: AddressField(
-                      formKey: _formKey,
-                      controller: addressController,
-                      onExpand: (isExpand) {
-                        this.isExpand = isExpand;
-                        setState(() {});
-                      },
-                      onError: (error) {
-                        this.error = error;
-                        setState(() {});
-                      },
-                    ),
-                  ),
+                      // top: (212 - 21).h,
+                      bottom: 0,
+                      left: Dimensions.PADDING_SIZE_DEFAULT +
+                          MediaQuery.of(context).padding.left,
+                      right: Dimensions.PADDING_SIZE_DEFAULT +
+                          MediaQuery.of(context).padding.right,
+                      child: SingleChildScrollView(
+                        child: AddressField(
+                          formKey: _formKey,
+                          controller: addressController,
+                          onExpand: (isExpand) {
+                            this.isExpand = isExpand;
+                            setState(() {});
+                          },
+                          onError: (error) {
+                            this.error = error;
+                            setState(() {});
+                          },
+                        ),
+                      )),
                 ],
               ),
               if (isMultipleAlgo) ...[

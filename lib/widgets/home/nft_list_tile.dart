@@ -258,10 +258,10 @@ class _NFTListTileState extends State<NFTListTile> {
               ),
               SizedBox(height: 10.h),
               ...listBuilder(
-                itemCount: nft.nft?.urls?.toJson().length ?? 0,
+                itemCount: nft.nft?.urls?.length ?? 0,
                 builder: (i) {
-                  var key = nft.nft?.urls?.toJson().keys.toList()[i];
-                  var value = nft.nft?.urls?.toJson()[key];
+                  var key = nft.nft?.urls?.keys.toList()[i];
+                  var value = nft.nft?.urls?[key];
 
                   return value == null
                       ? Container()
@@ -377,6 +377,20 @@ class _NFTListTileState extends State<NFTListTile> {
                     .currency
                     .name
                     .toUpperCase()),
+        if (type == TransType.Floor) ...[
+          const SizedBox(height: 4),
+          RichText(
+              text: TextSpan(
+                  text: trans.text ?? "",
+                  style: const TextStyle(
+                    fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+                    fontSize: Dimensions.FONT_SIZE_SMALL,
+                    fontWeight: FontWeight.w600,
+                    color: ColorResources.primaryColor,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => launchURLApp(trans.link ?? "")))
+        ],
         if (type != TransType.Floor) ...[
           const SizedBox(height: 4),
           RichText(
@@ -664,7 +678,7 @@ class NFTHeaderImage extends StatelessWidget {
           imageUrl: url,
           height: 35,
           width: 35,
-          fit: BoxFit.fill,
+          fit: BoxFit.contain,
           errorWidget: (context, o, s) =>
               const ErrorImage(height: 35, width: 35),
           progressIndicatorBuilder: (_, __, ___) {

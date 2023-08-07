@@ -167,7 +167,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           automaticallyImplyLeading: false,
           toolbarHeight: (((asaModel.addresses?.length ?? 0) > 4) ? 35 : 0) +
               (widget.type == CategoryType.nft ? 50 : 100) +
-              (asaModel.message != null ? 40 : 0) +
+              (asaModel.warning != null ? 40 : 0) +
               (asaModel.information != null ? 40 : 0),
           titleSpacing: 0,
           title: SizedBox(
@@ -207,7 +207,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                         [],
                   ],
                 ),
-                if (asaModel.message != null)
+                if (asaModel.warning != null)
                   const Message(type: messageType.message),
                 if (asaModel.information != null)
                   const Message(type: messageType.info),
@@ -477,7 +477,9 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             isExpanded: (asaId == data.collection.toString()),
             crossAxisCount: crossAxisCount,
             borderColor: color,
-            title: "${data.amount ?? 0}  ${data.collection ?? ""}",
+            title: AppConstants.removeDecimalZeroFormat(data.amount ?? 0) +
+                " " +
+                (data.collection ?? ""),
             images:
                 data.nfts?.map<String>((e) => e.nft?.tpath ?? "").toList() ??
                     [],
@@ -532,7 +534,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             title: "${data.amount ?? 0}  ${data.collection ?? ""}",
             subTitle: "ALPHA",
             images: data.nfts
-                    ?.map<String>((e) => e.nft?.urls?.uRL ?? "")
+                    ?.map<String>((e) => e.nft?.urls?['URL'] ?? "")
                     .toList() ??
                 [],
             nftValues: data,
@@ -665,7 +667,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
         100 +
         ((index.toInt() == 0) ? 7 : (index * 54)) +
         (((asaModel.addresses?.length ?? 0) > 4) ? 35 : 0) +
-        (asaModel.message != null ? 40 : 0) +
+        (asaModel.warning != null ? 40 : 0) +
         (asaModel.information != null ? 40 : 0);
     if (animate) {
       if (controller.position.maxScrollExtent > 0) {

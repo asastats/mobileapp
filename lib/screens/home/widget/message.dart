@@ -33,7 +33,7 @@ class _MessageState extends State<Message> {
       padding: const EdgeInsets.only(top: 5),
       child: Text(
         widget.type == messageType.message
-            ? _asaProvider.asaModel.message ?? ""
+            ? _asaProvider.asaModel.warning ?? ""
             : _asaProvider.asaModel.information ?? "",
         maxLines: 2,
         textAlign: TextAlign.center,
