@@ -81,18 +81,21 @@ class AppConstants {
 
   static String formateNumber(double number, {String points = "0000"}) {
     var formatter = NumberFormat('#,##0.$points');
-    if (number.toString().split(".")[1] != "0") {
-      if (number.toString().split(".")[1].length < 4) {
-        var val = NumberFormat('#,##0')
-            .format(int.parse(number.toString().split(".")[0]));
-        if (number.toString().split(".").length == 2) {
-          if (int.parse(number.toString().split(".")[1]) == 0) {
-            return number.toString().split(".")[0];
-          }
+    List<String> parts = number.toString().split(".");
+
+    if (parts.length == 2) {
+      if (parts[1].length < 4) {
+        var formattedInteger =
+            NumberFormat('#,##0').format(int.parse(parts[0]));
+
+        if (int.parse(parts[1]) == 0) {
+          return formattedInteger;
         }
-        return "$val.${number.toString().split(".")[1]}";
+
+        return "$formattedInteger.${parts[1]}";
       }
     }
+
     return formatter.format(number).replaceAll(RegExp(r'.000*$'), '');
   }
 
