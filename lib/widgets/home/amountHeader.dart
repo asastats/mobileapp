@@ -74,7 +74,7 @@ class _AmountHeaderState extends State<AmountHeader> {
     return widget.type == CategoryType.all
         ? _appSettingProvider.currency != Currency.algo
             ? "${getASAModel().total?.total?.toStringAsFixed(2) ?? 0} ALGO (${AppConstants.formateNumber((getASAModel().total?.total ?? 0) / (getASAModel().total?.totalusdc ?? 0), points: "0000")} ALGO/USD)"
-            : "${getASAModel().total?.totalusdc?.toStringAsFixed(2) ?? 0} USD (${AppConstants.formateNumber((getASAModel().total?.totalusdc ?? 0) / (getASAModel().total?.total ?? 0), points: "0000")} USD/ALGO)"
+            : "${getASAModel().total?.totalusdc?.toStringAsFixed(2) ?? 0} USD (${AppConstants.formateNumber((getASAModel().total?.pricealgo ?? 0), points: "0000")} USD/ALGO)"
         : widget.type == CategoryType.asa
             ? _appSettingProvider.currency != Currency.algo
                 ? "${getASAModel().total?.asa?.toStringAsFixed(2) ?? 0} ALGO (${AppConstants.formateNumber((getASAModel().total?.asa ?? 0) / (getASAModel().total?.totalusdc ?? 0), points: "0000")} ALGO/USD)"

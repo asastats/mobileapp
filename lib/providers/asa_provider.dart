@@ -185,9 +185,7 @@ class ASAProvider with ChangeNotifier {
                                     ?.toJson()
                                     .containsElement(searchText) ??
                                 false) ||
-                            (element.nft?.urls
-                                    ?.
-                                    containsElement(searchText) ??
+                            (element.nft?.urls?.containsElement(searchText) ??
                                 false) ||
                             (element.nft?.listed
                                     ?.toJson()

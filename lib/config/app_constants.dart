@@ -80,23 +80,23 @@ class AppConstants {
   }
 
   static String formateNumber(double number, {String points = "0000"}) {
-    var formatter = NumberFormat('#,##0.$points');
-    List<String> parts = number.toString().split(".");
+    String formattedNumber = number.toStringAsFixed(points.length);
 
-    if (parts.length == 2) {
-      if (parts[1].length < 4) {
-        var formattedInteger =
-            NumberFormat('#,##0').format(int.parse(parts[0]));
+    List<String> parts = formattedNumber.split('.');
+    List<String> integerPart = parts[0].split('');
 
-        if (int.parse(parts[1]) == 0) {
-          return formattedInteger;
-        }
-
-        return "$formattedInteger.${parts[1]}";
-      }
+    for (int i = integerPart.length - 3; i > 0; i -= 3) {
+      integerPart.insert(i, ',');
     }
 
-    return formatter.format(number).replaceAll(RegExp(r'.000*$'), '');
+    formattedNumber = integerPart.join('');
+
+    if (formattedNumber.endsWith(",") && parts.length == 1) {
+      formattedNumber =
+          formattedNumber.substring(0, formattedNumber.length - 1);
+    }
+
+    return formattedNumber + (parts[1] != "0000" ? '.' + parts[1] : '');
   }
 
   static String removeDecimalZeroFormat(double n) {

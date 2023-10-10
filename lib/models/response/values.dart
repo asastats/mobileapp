@@ -9,13 +9,7 @@ class Values {
   List<Dapps>? dapps;
   double? price;
 
-  Values(
-      {this.value,
-      this.id,
-      this.amount,
-      this.asa,
-      this.dapps,
-      this.price});
+  Values({this.value, this.id, this.amount, this.asa, this.dapps, this.price});
 
   Values.fromJson(Map<String, dynamic> json) {
     value = (json['value'] ?? 0).toDouble();

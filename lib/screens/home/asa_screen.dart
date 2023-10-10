@@ -29,6 +29,7 @@ import '../../providers/asa_provider.dart';
 import '../../widgets/progressbar.dart';
 import '../../widgets/refresh_widget.dart';
 import 'home_screen.dart';
+import 'package:asa_stats/screens/menu/menu_screen.dart' show launchURLApp;
 
 class AsaScreen extends StatefulWidget {
   final CategoryType type;
@@ -158,10 +159,8 @@ class _AsaScreenState extends State<AsaScreen> {
                             },
                             child: Text(
                               val,
-                              style: TextStyle(
-                                color: ((asaModel.addresses?.length ?? 0) > 1)
-                                    ? ColorResources.primaryColor
-                                    : ColorResources.themeTextColor(context),
+                              style: const TextStyle(
+                                color: ColorResources.primaryColor,
                                 fontSize: Dimensions.FONT_SIZE_LARGE,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -423,6 +422,8 @@ class _AsaScreenState extends State<AsaScreen> {
 
   void onAddressTap(element) async {
     if ((asaModel.addresses?.length ?? 0) == 1) {
+      String url = 'https://algoexplorer.io/address/$element';
+      await launchURLApp(url);
       return;
     }
     showEasyLoader(true);

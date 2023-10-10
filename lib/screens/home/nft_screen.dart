@@ -32,6 +32,7 @@ import '../../utility/multiple_gesturedetector.dart';
 import '../../widgets/home/nft_list_tile.dart';
 import '../../widgets/progressbar.dart';
 import 'home_screen.dart';
+import 'package:asa_stats/screens/menu/menu_screen.dart' show launchURLApp;
 
 class NftScreen extends StatefulWidget {
   final bool isSingleAddress;
@@ -158,10 +159,8 @@ class _NftScreenState extends State<NftScreen> {
                             onTap: () => onAddressTap(element),
                             child: Text(
                               val,
-                              style: TextStyle(
-                                color: ((asaModel.addresses?.length ?? 0) > 1)
-                                    ? ColorResources.primaryColor
-                                    : ColorResources.themeTextColor(context),
+                              style: const TextStyle(
+                                color: ColorResources.primaryColor,
                                 fontSize: Dimensions.FONT_SIZE_LARGE,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -453,6 +452,8 @@ class _NftScreenState extends State<NftScreen> {
 
   void onAddressTap(element) async {
     if ((asaModel.addresses?.length ?? 0) == 1) {
+      String url = 'https://algoexplorer.io/address/$element';
+      await launchURLApp(url);
       return;
     }
     showEasyLoader(true);
