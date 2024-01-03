@@ -177,6 +177,18 @@ class _ASAListTile extends State<ASAListTile> {
           ),
         ),
         const SizedBox(height: 8),
+        if (!widget.showProviders) // only show for noteval
+          Attribute(
+            label: "Amount",
+            value: widget.values?.amount != null
+                ? AppConstants.formateNumber(
+                    double.parse(
+                      formateAmount(widget.values!.amount!,
+                          widget.values!.asa?.decimals ?? 0, 4),
+                    ),
+                    points: "0000")
+                : 'Unknown amount',
+          ),
         Attribute(
           label: "Unit name",
           value: widget.values?.asa?.unit ?? "",
@@ -191,10 +203,11 @@ class _ASAListTile extends State<ASAListTile> {
           label: "Decimals",
           value: widget.values?.asa?.decimals.toString() ?? "",
         ),
-        PricePerUnit(
-          values: widget.values,
-          usdValue: widget.model?.total?.priceusdc ?? 1,
-        ),
+        if (widget.showProviders) // don't show for noteval
+          PricePerUnit(
+            values: widget.values,
+            usdValue: widget.model?.total?.priceusdc ?? 1,
+          ),
         Attribute(
           label: "URL",
           value: widget.values?.asa?.url.toString(),
