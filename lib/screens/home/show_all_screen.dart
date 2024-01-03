@@ -405,17 +405,17 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             asaData: asaModel,
             onTap: () {
               if (_asaProvider.isCaching) return;
-              if ((asaId == data.asa?.unit.toString())) {
+              if ((asaId == data.asa?.id.toString())) {
                 asaId = "";
               } else {
-                asaId = data.asa?.unit.toString() ?? "";
+                asaId = data.asa?.id.toString() ?? "";
               }
               setState(() {});
               onListItemTap(index.toDouble(), animate: asaId.isNotEmpty);
             },
             tailWidth: (maxl * 6) + 50,
           ),
-          pinned: (asaId == data.asa?.unit.toString()) &&
+          pinned: (asaId == data.asa?.id.toString()) &&
               _appSettingProvider
                   .isExpanded, // hide stick header when it's not visible
           automaticallyImplyLeading: false,
@@ -423,12 +423,13 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
         ))
         ..add(
           ASAListTile(
-            key: ValueKey("$runtimeType ${data.asa?.unit} Asa listTile"),
+            key: ValueKey("$runtimeType ${data.asa?.id} Asa listTile"),
+            // upper line change unit to id, and it doesn't crash
             title: data.asa?.unit ?? "",
             isAlgo: _appSettingProvider.currency == Currency.algo,
             values: data,
             model: asaModel, // remove when we use provider
-            isExpanded: (asaId == data.asa?.unit.toString()),
+            isExpanded: (asaId == data.asa?.id.toString()),
             borderColor: color,
             onVisibilityChange: (visible) {
               // setState(() {

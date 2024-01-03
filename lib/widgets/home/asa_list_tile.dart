@@ -83,7 +83,7 @@ class _ASAListTile extends State<ASAListTile> {
       delegate: SliverChildListDelegate([
         if (widget.isExpanded)
           VisibilityDetector(
-            key: ValueKey("$runtimeType ${widget.title}"),
+            key: ValueKey("$runtimeType ${widget.values?.id}"),
             onVisibilityChanged: (info) {
               if (info.visibleFraction <= info.visibleBounds.top) {
                 widget.onVisibilityChange(info.visibleFraction != 0);
@@ -345,7 +345,7 @@ Widget getStickyHeader({
       margin: const EdgeInsets.only(bottom: 7),
       padding: const EdgeInsets.only(right: Dimensions.PADDING_SIZE_SMALL),
       decoration: BoxDecoration(
-        color: (asaId == data.asa?.unit.toString())
+        color: (asaId == data.asa?.id.toString())
             ? ColorResources.primaryColor
             : Provider.of<ThemeProvider>(context).darkTheme
                 ? const Color(0xff373737)
@@ -413,12 +413,12 @@ Widget getStickyHeader({
                           ), points: "0000")}  ${data.asa?.unit ?? ""}",
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        backgroundColor: (asaId == data.asa?.unit.toString())
+                        backgroundColor: (asaId == data.asa?.id.toString())
                             ? ColorResources.primaryColor
                             : Provider.of<ThemeProvider>(context).darkTheme
                                 ? const Color(0xff373737)
                                 : ColorResources.whiteColor,
-                        color: (asaId == data.asa?.unit.toString())
+                        color: (asaId == data.asa?.id.toString())
                             ? ColorResources.whiteColor
                             : ColorResources.themeTextColor(context),
                         fontSize: Dimensions.FONT_SIZE_DEFAULT,
@@ -447,13 +447,12 @@ Widget getStickyHeader({
                               appSettingProvider.currency.name.toUpperCase(),
                           // overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            backgroundColor: (asaId ==
-                                    data.asa?.unit.toString())
+                            backgroundColor: (asaId == data.asa?.id.toString())
                                 ? ColorResources.primaryColor
                                 : Provider.of<ThemeProvider>(context).darkTheme
                                     ? const Color(0xff373737)
                                     : ColorResources.whiteColor,
-                            color: (asaId == data.asa?.unit.toString())
+                            color: (asaId == data.asa?.id.toString())
                                 ? ColorResources.whiteColor
                                 : ColorResources.themeLightGrayWhiteColor(
                                     context),
@@ -466,12 +465,12 @@ Widget getStickyHeader({
                       Padding(
                         padding: const EdgeInsets.only(left: 17),
                         child: Image.asset(
-                          (asaId == data.asa?.unit.toString())
+                          (asaId == data.asa?.id.toString())
                               ? Images.IC_ARROW_UP
                               : Images.IC_DROP_DOWN,
                           height: 5,
                           width: 10,
-                          color: (asaId == data.asa?.unit.toString())
+                          color: (asaId == data.asa?.id.toString())
                               ? ColorResources.whiteColor
                               : ColorResources.themeTextColor(context),
                         ),
