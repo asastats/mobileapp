@@ -767,7 +767,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
 
   void onAddressTap(element) async {
     if ((asaModel.addresses?.length ?? 0) == 1) {
-      String url = 'https://algoexplorer.io/address/$element';
+      String url = 'https://allo.info/account/$element';
       await launchURLApp(url);
       return;
     }
