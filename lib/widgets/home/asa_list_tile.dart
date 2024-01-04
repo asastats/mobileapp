@@ -184,7 +184,7 @@ class _ASAListTile extends State<ASAListTile> {
                 ? AppConstants.formateNumber(
                     double.parse(
                       formateAmount(widget.values!.amount!,
-                          widget.values!.asa?.decimals ?? 0, 4),
+                          widget.values!.asa?.decimals ?? 0, 6),
                     ),
                     points: "0000")
                 : 'Unknown amount',
@@ -421,7 +421,7 @@ Widget getStickyHeader({
                     child: Text(
                       "${AppConstants.formateNumber(double.parse(
                             formateAmount(
-                                data.amount ?? 0, data.asa?.decimals ?? 0, 4,
+                                data.amount ?? 0, data.asa?.decimals ?? 0, 6,
                                 utit: data.asa?.unit),
                           ), points: "0000")}  ${data.asa?.unit ?? ""}",
                       overflow: TextOverflow.ellipsis,

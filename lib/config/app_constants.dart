@@ -1,7 +1,6 @@
 // ignore_for_file: constant_identifier_names, non_constant_identifier_names
 
 import 'dart:convert';
-
 import 'package:asa_stats/providers/asa_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
