@@ -58,7 +58,7 @@ class _ASAListTile extends State<ASAListTile> {
   List providerImage = [
     Images.ALGO_CHARTS,
     Images.ALGO_EXPLORER,
-    Images.ALGO_RANDS_STATE,
+    Images.ALGORAND_STATS,
     Images.ANS,
     Images.COIN_MARKET_CAT,
     Images.LIVE_COIN_WATCH,

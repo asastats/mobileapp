@@ -6,7 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-
+import 'package:asa_stats/widgets/error_image.dart';
 import '../../config/app_constants.dart';
 import '../../config/color.dart';
 import '../../config/dimensions.dart';
@@ -144,56 +144,87 @@ class _ASADataState extends State<ASAData> {
                         ),
                       //? Link with beta
                       ...item?.entries?.links?.map((e) {
-                            return Tooltip(
-                              message: e.title,
-                              child: GestureDetector(
-                                onTap: () {
-                                  launchURLApp(e.link ?? "");
-                                },
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    const SizedBox(height: 4),
-                                    RichText(
-                                      textAlign: TextAlign.end,
-                                      text: TextSpan(
-                                        text: "${e.small ?? ""}  ",
-                                        style: TextStyle(
-                                          color: ColorResources.themeTextColor(
-                                              context),
-                                          fontSize:
-                                              Dimensions.FONT_SIZE_SMALL_8,
-                                          fontWeight: FontWeight.w300,
+                            if (e.small != null) {
+                              return Tooltip(
+                                message: e.title,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    launchURLApp(e.link ?? "");
+                                  },
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      const SizedBox(height: 4),
+                                      RichText(
+                                        textAlign: TextAlign.end,
+                                        text: TextSpan(
+                                          text: "${e.small}  ",
+                                          style: TextStyle(
+                                            color:
+                                                ColorResources.themeTextColor(
+                                                    context),
+                                            fontSize:
+                                                Dimensions.FONT_SIZE_SMALL_8,
+                                            fontWeight: FontWeight.w300,
+                                            fontFamily:
+                                                AppConstants.FONT_FAMILY_OUTFIT,
+                                          ),
+                                          children: [
+                                            TextSpan(
+                                              text: (e.linktext ?? ""),
+                                              style: const TextStyle(
+                                                color:
+                                                    ColorResources.primaryColor,
+                                                fontSize:
+                                                    Dimensions.FONT_SIZE_SMALL,
+                                                fontWeight: FontWeight.w600,
+                                                fontFamily: AppConstants
+                                                    .FONT_FAMILY_OUTFIT,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            } else if (e.linktext != null) {
+                              return Tooltip(
+                                message: e.title,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    launchURLApp(e.link ?? "");
+                                  },
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        e.linktext!,
+                                        textAlign: TextAlign.end,
+                                        style: const TextStyle(
+                                          color: ColorResources.primaryColor,
+                                          fontSize: Dimensions.FONT_SIZE_SMALL,
+                                          fontWeight: FontWeight.w600,
                                           fontFamily:
                                               AppConstants.FONT_FAMILY_OUTFIT,
                                         ),
-                                        children: [
-                                          TextSpan(
-                                            text: (e.linktext ?? ""),
-                                            style: const TextStyle(
-                                              color:
-                                                  ColorResources.primaryColor,
-                                              fontSize:
-                                                  Dimensions.FONT_SIZE_SMALL,
-                                              fontWeight: FontWeight.w600,
-                                              fontFamily: AppConstants
-                                                  .FONT_FAMILY_OUTFIT,
-                                            ),
-                                          ),
-                                        ],
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
+                            return const SizedBox
+                                .shrink(); // Return an empty box if both e.small and e.linktext are null
                           }).toList() ??
                           [],
                       //? Amount builder
                       if (item?.entries?.amount != null &&
                           item!.entries!.amount?.unit != null)
                         Padding(
-                          padding: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.only(top: 1),
                           child: AmountBuilder(
                             amount: item.entries!.amount!,
                             decimal: widget.values.asa?.decimals ?? 1,
@@ -231,6 +262,33 @@ class _ASADataState extends State<ASAData> {
                             ),
                           ),
                         ),
+
+                      ...item?.entries?.links
+                              ?.map((e) {
+                                if (e.link?.contains('algorandstats') ??
+                                    false) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      launchURLApp(e.link ?? "");
+                                    },
+                                    child: Image.network(
+                                      AppConstants.getProviderImage(
+                                          "algorandstats"),
+                                      height: 25,
+                                      width: 25,
+                                      errorBuilder: (_, __, ___) {
+                                        return const ErrorImage(
+                                            height: 25, width: 25);
+                                      },
+                                    ),
+                                  );
+                                }
+                                return null;
+                              })
+                              .where((e) => e != null)
+                              .cast<Widget>()
+                              .toList() ??
+                          []
                     ],
                   ),
                 ),

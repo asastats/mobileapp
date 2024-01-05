@@ -33,7 +33,7 @@ class AmountBuilder extends StatelessWidget {
                 message: amount.text,
                 child: Container(
                   padding: EdgeInsets.symmetric(
-                    vertical: 3.h,
+                    vertical: 2.h,
                     horizontal: amount.border != true ? 0 : 8.w,
                   ),
                   decoration: amount.border == true

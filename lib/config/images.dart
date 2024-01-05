@@ -42,7 +42,7 @@ class Images {
   //Providers Image
   static String ALGO_CHARTS = "algocharts.png";
   static String ALGO_EXPLORER = "algoexplorer.png";
-  static String ALGO_RANDS_STATE = "algorandstats.png";
+  static String ALGORAND_STATS = "algorandstats.png";
   static String ANS = "ans.png";
   static String COIN_MARKET_CAT = "coinmarketcap.png";
   static String LIVE_COIN_WATCH = "livecoinwatch.png";

@@ -29,6 +29,34 @@ class ValueBuilder extends StatelessWidget {
           runSpacing: 4.h,
           spacing: 4.w,
           children: [
+            if (value.text != null)
+              Tooltip(
+                message: value.text,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    vertical: 0.h,
+                    horizontal: value.border != true ? 0 : 8.w,
+                  ),
+                  decoration: value.border == true
+                      ? BoxDecoration(
+                          color: ColorResources.primaryColor,
+                          borderRadius: BorderRadius.circular(2.h),
+                        )
+                      : null,
+                  child: Text(
+                    value.text ?? "",
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: value.border != true
+                          ? ColorResources.themeTextColor(context)
+                          : ColorResources.themeTextColorReverse(context),
+                      fontSize: Dimensions.FONT_SIZE_SMALL,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+                    ),
+                  ),
+                ),
+              ),
             if (value.linktext != null)
               GestureDetector(
                 onTap: () {
