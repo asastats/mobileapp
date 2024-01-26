@@ -308,6 +308,8 @@ class _NftScreenState extends State<NftScreen> {
             isExpanded: (asaId == data.collection.toString()),
             crossAxisCount: crossAxisCount,
             borderColor: color,
+            appSettingProvider: _appSettingProvider,
+            asaData: asaModel,
             // title: "${data.amount ?? 0}  ${data.collection ?? ""}",
             title: AppConstants.removeDecimalZeroFormat(data.amount ?? 0) +
                 " " +
@@ -315,7 +317,11 @@ class _NftScreenState extends State<NftScreen> {
             images: [
               ...?data.nfts?.map<String>((e) => e.nft?.tpath ?? "").toList()
             ],
-            subTitle: "ALPHA",
+            miniSubTitle: "BETA ",
+            subTitle: (_appSettingProvider.currency == Currency.algo
+                ? (data.value ?? 0.0).toStringAsFixed(2)
+                : ((data.value ?? 0) / (asaModel.total?.priceusdc ?? 1))
+                    .toStringAsFixed(2)),
             onTap: () {
               if (_asaProvider.isCaching) return;
               double nHeight = 0;
@@ -358,7 +364,7 @@ class _NftScreenState extends State<NftScreen> {
             key: ValueKey("$runtimeType ${data.collection} NFT List tile"),
             isExpanded: (asaId == data.collection.toString()),
             title: "${data.amount ?? 0}  ${data.collection ?? ""}",
-            subTitle: "ALPHA",
+            subTitle: "BETA",
             images: [
               ...?data.nfts?.map<String>((e) => e.nft?.path ?? "").toList()
             ],

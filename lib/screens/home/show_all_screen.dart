@@ -477,13 +477,19 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             isExpanded: (asaId == data.collection.toString()),
             crossAxisCount: crossAxisCount,
             borderColor: color,
+            appSettingProvider: _appSettingProvider,
+            asaData: asaModel,
             title: AppConstants.removeDecimalZeroFormat(data.amount ?? 0) +
                 " " +
                 (data.collection ?? ""),
             images:
                 data.nfts?.map<String>((e) => e.nft?.tpath ?? "").toList() ??
                     [],
-            subTitle: "ALPHA",
+            miniSubTitle: "BETA ",
+            subTitle: (_appSettingProvider.currency == Currency.algo
+                ? (data.value ?? 0.0).toStringAsFixed(2)
+                : ((data.value ?? 0) / (asaModel.total?.priceusdc ?? 1))
+                    .toStringAsFixed(2)),
             onTap: () {
               double nHeight = 0;
               if (_asaProvider.isCaching) return;
@@ -532,7 +538,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             key: ValueKey("$runtimeType ${data.collection} NFT List tile"),
             isExpanded: (asaId == data.collection.toString()),
             title: "${data.amount ?? 0}  ${data.collection ?? ""}",
-            subTitle: "ALPHA",
+            subTitle: "BETA",
             images: data.nfts
                     ?.map<String>((e) => e.nft?.urls?['URL'] ?? "")
                     .toList() ??

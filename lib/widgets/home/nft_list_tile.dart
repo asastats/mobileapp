@@ -439,9 +439,12 @@ class _NFTListTileState extends State<NFTListTile> {
 Widget nftStickyHeader(
     {required BuildContext context,
     required String title,
+    required String miniSubTitle,
     required String subTitle,
     required List<String> images,
     required Color borderColor,
+    required AppSettingProvider appSettingProvider,
+    required ASAModel asaData,
     required int crossAxisCount,
     required bool isExpanded,
     required Function() onTap,
@@ -576,32 +579,78 @@ Widget nftStickyHeader(
                         ),
                       ),
                       Positioned(
-                        top: images.length > 3 ? 20 : 0,
+                        top: images.length > 3 ? 10 : 10,
                         bottom: images.length > 3 ? null : 0,
                         right: 0,
                         child: Align(
                           alignment: Alignment.center,
                           child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Container(
-                                width: 30,
+                                width: 80,
                                 alignment: Alignment.centerRight,
-                                child: Text(
-                                  subTitle,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: isExpanded
-                                        ? ColorResources.whiteColor
-                                        : ColorResources
-                                            .themeLightGrayWhiteColor(context),
-                                    fontSize: Dimensions.FONT_SIZE_SMALL_8,
-                                    fontWeight: FontWeight.w700,
-                                    fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    RichText(
+                                      textAlign: TextAlign.right,
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: miniSubTitle,
+                                            style: TextStyle(
+                                              color: isExpanded
+                                                  ? ColorResources.whiteColor
+                                                  : ColorResources
+                                                      .themeLightGrayWhiteColor(
+                                                          context),
+                                              fontSize:
+                                                  Dimensions.FONT_SIZE_SMALL_8,
+                                              fontWeight: FontWeight.w700,
+                                              fontFamily: AppConstants
+                                                  .FONT_FAMILY_OUTFIT,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: subTitle,
+                                            style: TextStyle(
+                                              color: isExpanded
+                                                  ? ColorResources.whiteColor
+                                                  : ColorResources
+                                                      .themeLightGrayWhiteColor(
+                                                          context),
+                                              fontSize:
+                                                  Dimensions.FONT_SIZE_DEFAULT,
+                                              fontWeight: FontWeight.w700,
+                                              fontFamily: AppConstants
+                                                  .FONT_FAMILY_OUTFIT,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      appSettingProvider.currency.name
+                                          .toUpperCase(),
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                        color: isExpanded
+                                            ? ColorResources.whiteColor
+                                            : ColorResources
+                                                .themeLightGrayWhiteColor(
+                                                    context),
+                                        fontSize: Dimensions.FONT_SIZE_DEFAULT,
+                                        fontWeight: FontWeight.w700,
+                                        fontFamily:
+                                            AppConstants.FONT_FAMILY_OUTFIT,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.only(left: 17),
+                                padding: const EdgeInsets.only(left: 10),
                                 child: Image.asset(
                                   isExpanded
                                       ? Images.IC_ARROW_UP
