@@ -59,27 +59,101 @@ class _AmountHeaderState extends State<AmountHeader> {
   }
 
   String getAmount() {
-    return widget.type == CategoryType.all
-        ? _appSettingProvider.currency == Currency.algo
-            ? "${getASAModel().total?.total?.toStringAsFixed(2) ?? 0} ALGO"
-            : "${getASAModel().total?.totalusdc?.toStringAsFixed(2) ?? 0} USD"
-        : widget.type == CategoryType.asa
-            ? _appSettingProvider.currency == Currency.algo
-                ? "${getASAModel().total?.asa?.toStringAsFixed(2) ?? 0} ALGO"
-                : "${((getASAModel().total?.asa ?? 1) / (getASAModel().total?.priceusdc ?? 1)).toStringAsFixed(2)} USD"
-            : "";
+    if (widget.type == CategoryType.all) {
+      if (_asaProvider.getTotalWithoutNfts()) {
+        // don't calculate nfts
+        if (_appSettingProvider.currency == Currency.algo) {
+          return "${getASAModel().total?.total?.toStringAsFixed(2) ?? 0} ALGO";
+        } else {
+          return "${getASAModel().total?.totalusdc?.toStringAsFixed(2) ?? 0} USD";
+        }
+      } else {
+        // calculate nfts
+        if (_appSettingProvider.currency == Currency.algo) {
+          double total = (getASAModel().total?.total ?? 0) +
+              (getASAModel().total?.nft ?? 0);
+          return "${total.toStringAsFixed(2)} ALGO";
+        } else {
+          double totalAlgo = (getASAModel().total?.total ?? 0) +
+              (getASAModel().total?.nft ?? 0);
+          double priceUsdc = getASAModel().total?.priceusdc ?? 1;
+          double totalUsd = totalAlgo / priceUsdc;
+          return "${totalUsd.toStringAsFixed(2)} USD";
+        }
+      }
+    } else if (widget.type == CategoryType.asa) {
+      if (_appSettingProvider.currency == Currency.algo) {
+        return "${getASAModel().total?.asa?.toStringAsFixed(2) ?? 0} ALGO";
+      } else {
+        double usdValue = ((getASAModel().total?.asa ?? 1) /
+            (getASAModel().total?.priceusdc ?? 1));
+        return "${usdValue.toStringAsFixed(2)} USD";
+      }
+    }
+
+    return "";
   }
 
   String getOppositeAmount() {
-    return widget.type == CategoryType.all
-        ? _appSettingProvider.currency != Currency.algo
-            ? "${getASAModel().total?.total?.toStringAsFixed(2) ?? 0} ALGO (${AppConstants.formateNumber((getASAModel().total?.total ?? 0) / (getASAModel().total?.totalusdc ?? 0), points: "0000")} ALGO/USD)"
-            : "${getASAModel().total?.totalusdc?.toStringAsFixed(2) ?? 0} USD (${AppConstants.formateNumber((getASAModel().total?.pricealgo ?? 0), points: "0000")} USD/ALGO)"
-        : widget.type == CategoryType.asa
-            ? _appSettingProvider.currency != Currency.algo
-                ? "${getASAModel().total?.asa?.toStringAsFixed(2) ?? 0} ALGO (${AppConstants.formateNumber((getASAModel().total?.asa ?? 0) / (getASAModel().total?.totalusdc ?? 0), points: "0000")} ALGO/USD)"
-                : "${((getASAModel().total?.asa ?? 1) / (getASAModel().total?.priceusdc ?? 1)).toStringAsFixed(2)} USD (${AppConstants.formateNumber((getASAModel().total?.pricealgo ?? 0), points: "0000")} USD/ALGO)"
-            : "";
+    if (widget.type == CategoryType.all) {
+      if (_appSettingProvider.currency != Currency.algo) {
+        if (_asaProvider.getTotalWithoutNfts()) {
+          double totalAlgo = getASAModel().total?.total ?? 0;
+          double totalUsdc = getASAModel().total?.totalusdc ?? 0;
+          double algoPerUsd = totalUsdc != 0 ? totalAlgo / totalUsdc : 0;
+          String formattedAlgoPerUsd =
+              AppConstants.formateNumber(algoPerUsd, points: "0000");
+          return "${totalAlgo.toStringAsFixed(2)} ALGO ($formattedAlgoPerUsd ALGO/USD)";
+        } else {
+          double totalAlgo = (getASAModel().total?.total ?? 0) +
+              (getASAModel().total?.nft ?? 0);
+          double totalUsdc = (getASAModel().total?.totalusdc ?? 0) +
+              ((getASAModel().total?.nft ?? 0) /
+                  (getASAModel().total?.priceusdc ?? 1));
+          double algoPerUsd = totalUsdc != 0 ? totalAlgo / totalUsdc : 0;
+          String formattedAlgoPerUsd =
+              AppConstants.formateNumber(algoPerUsd, points: "0000");
+          return "${totalAlgo.toStringAsFixed(2)} ALGO ($formattedAlgoPerUsd ALGO/USD)";
+        }
+      } else {
+        if (_asaProvider.getTotalWithoutNfts()) {
+          double totalUsdc = getASAModel().total?.totalusdc ?? 0;
+          double priceAlgo = getASAModel().total?.pricealgo ?? 0;
+          String formattedPriceAlgo =
+              AppConstants.formateNumber(priceAlgo, points: "0000");
+          return "${totalUsdc.toStringAsFixed(2)} USD ($formattedPriceAlgo USD/ALGO)";
+        } else {
+          //currency algo, include nft evaluation
+          double totalUsdc = (getASAModel().total?.totalusdc ?? 0) +
+              ((getASAModel().total?.nft ?? 0) /
+                  (getASAModel().total?.priceusdc ?? 1));
+          double priceAlgo = getASAModel().total?.pricealgo ?? 0;
+          String formattedPriceAlgo =
+              AppConstants.formateNumber(priceAlgo, points: "0000");
+          return "${totalUsdc.toStringAsFixed(2)} USD ($formattedPriceAlgo USD/ALGO)";
+        }
+      }
+    } else if (widget.type == CategoryType.asa) {
+      if (_appSettingProvider.currency != Currency.algo) {
+        double totalAsa = getASAModel().total?.asa ?? 0;
+        double priceAlgo =
+            getASAModel().total?.pricealgo ?? 1; // evade zero division
+        double algoPerUsd = 1 / priceAlgo;
+        String formattedAlgoPerUsd =
+            AppConstants.formateNumber(algoPerUsd, points: "0000");
+
+        return "${totalAsa.toStringAsFixed(2)} ALGO ($formattedAlgoPerUsd ALGO/USD)";
+      } else {
+        double asa = (getASAModel().total?.asa ?? 1) /
+            (getASAModel().total?.priceusdc ?? 1);
+        double priceAlgo = getASAModel().total?.pricealgo ?? 0;
+        String formattedPriceAlgo =
+            AppConstants.formateNumber(priceAlgo, points: "0000");
+        return "${asa.toStringAsFixed(2)} USD ($formattedPriceAlgo USD/ALGO)";
+      }
+    }
+
+    return "";
   }
 
   ASAModel getASAModel() {

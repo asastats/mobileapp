@@ -187,6 +187,8 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                   children: [
                     ...asaModel.addresses?.map((element) {
                           String val = "";
+                          print(
+                              "I'm getting the value of total without nfts and it's: ${_asaProvider.getTotalWithoutNfts()}“");
                           val +=
                               (" ${element.firstChars(5)}...${element.lastChars(5)}");
                           return GestureDetector(

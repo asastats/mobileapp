@@ -345,6 +345,14 @@ class ASAProvider with ChangeNotifier {
     return asaRepo.getPieChartVisibility();
   }
 
+  Future<bool> setTotalWithoutNfts(bool value) {
+    return asaRepo.setTotalWithoutNfts(value);
+  }
+
+  bool getTotalWithoutNfts() {
+    return asaRepo.getTotalWithoutNfts();
+  }
+
   Future<bool> setHomeFirst(bool value) {
     return asaRepo.setHomeFirst(value);
   }

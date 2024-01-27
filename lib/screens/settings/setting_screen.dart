@@ -77,6 +77,13 @@ class _SettingScreenState extends State<SettingScreen> {
                         provider.setHomeFirst(value);
                         setState(() {});
                       }),
+                      listTile(
+                          "Total without NFTs", provider.getTotalWithoutNfts(),
+                          (value) {
+                        provider.setTotalWithoutNfts(value);
+                        print("TotalWithoutNfts is set to: $value");
+                        setState(() {});
+                      }),
                       clearAllListTile(
                           "Clear all autofill addresses", onClearAllAddress)
                     ],

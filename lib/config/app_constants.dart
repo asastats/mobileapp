@@ -39,6 +39,7 @@ class AppConstants {
   static const String ASA_RESPONSE = 'ASA_RESPONSE';
   static const String AUTO_REFRESH = 'auto_refresh';
   static const String PIE_CHART_VISIBILITY = 'PIE_CHART_VISIBILITY';
+  static const String TOTAL_WITHOUT_NFTS = 'TOTAL_WITHOUT_NFTS';
   static const String HOME_FIRST = 'HOME_FIRST';
   static const String GLOBAL_SETTING = 'GLOBAL_SETTING';
 

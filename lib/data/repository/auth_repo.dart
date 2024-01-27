@@ -90,6 +90,14 @@ class ASArepo {
     return sharedPreferences.getBool(AppConstants.PIE_CHART_VISIBILITY) ?? true;
   }
 
+  Future<bool> setTotalWithoutNfts(bool value) {
+    return sharedPreferences.setBool(AppConstants.TOTAL_WITHOUT_NFTS, value);
+  }
+
+  bool getTotalWithoutNfts() {
+    return sharedPreferences.getBool(AppConstants.TOTAL_WITHOUT_NFTS) ?? false;
+  }
+
   Future<bool> setHomeFirst(bool value) {
     return sharedPreferences.setBool(AppConstants.HOME_FIRST, value);
   }
