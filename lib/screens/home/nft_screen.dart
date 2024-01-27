@@ -11,6 +11,7 @@ import 'package:asa_stats/config/hex_color.dart';
 import 'package:asa_stats/config/routes.dart';
 import 'package:asa_stats/data/repository/app_setting_repo.dart';
 import 'package:asa_stats/models/response/asa_model.dart';
+import 'package:asa_stats/widgets/home/amountHeader.dart';
 import 'package:asa_stats/models/response/base/response_model.dart';
 import 'package:asa_stats/providers/app_setting_provider.dart';
 import 'package:asa_stats/screens/web_view/webview_screen.dart';
@@ -35,11 +36,13 @@ import 'home_screen.dart';
 import 'package:asa_stats/screens/menu/menu_screen.dart' show launchURLApp;
 
 class NftScreen extends StatefulWidget {
+  final CategoryType type;
   final bool isSingleAddress;
   final HomeScreenState homeScreenState;
 
   const NftScreen({
     Key? key,
+    required this.type,
     required this.isSingleAddress,
     required this.homeScreenState,
   }) : super(key: key);
@@ -139,8 +142,7 @@ class _NftScreenState extends State<NftScreen> {
       slivers: [
         SliverAppBar(
           automaticallyImplyLeading: false,
-          toolbarHeight:
-              (((asaModel.addresses?.length ?? 0) > 4) ? 35 : 0) + 60,
+          toolbarHeight: (((asaModel.addresses?.length ?? 0) > 4) ? 120 : 100),
           titleSpacing: 0,
           title: SizedBox(
             width: double.maxFinite,
@@ -148,7 +150,12 @@ class _NftScreenState extends State<NftScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 20),
+                const SizedBox(height: 15),
+                AmountHeader(
+                  type: CategoryType.nft,
+                  isSingle: widget.isSingleAddress,
+                ),
+                const SizedBox(height: 5),
                 Wrap(
                   children: [
                     ...asaModel.addresses?.map((element) {

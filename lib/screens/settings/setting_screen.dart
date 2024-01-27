@@ -81,7 +81,6 @@ class _SettingScreenState extends State<SettingScreen> {
                           "Total without NFTs", provider.getTotalWithoutNfts(),
                           (value) {
                         provider.setTotalWithoutNfts(value);
-                        print("TotalWithoutNfts is set to: $value");
                         setState(() {});
                       }),
                       clearAllListTile(

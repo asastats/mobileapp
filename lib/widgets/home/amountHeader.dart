@@ -89,6 +89,14 @@ class _AmountHeaderState extends State<AmountHeader> {
             (getASAModel().total?.priceusdc ?? 1));
         return "${usdValue.toStringAsFixed(2)} USD";
       }
+    } else if (widget.type == CategoryType.nft) {
+      if (_appSettingProvider.currency == Currency.algo) {
+        return "${getASAModel().total?.nft?.toStringAsFixed(2) ?? 0} ALGO";
+      } else {
+        double usdValue = ((getASAModel().total?.nft ?? 1) /
+            (getASAModel().total?.priceusdc ?? 1));
+        return "${usdValue.toStringAsFixed(2)} USD";
+      }
     }
 
     return "";
@@ -150,6 +158,24 @@ class _AmountHeaderState extends State<AmountHeader> {
         String formattedPriceAlgo =
             AppConstants.formateNumber(priceAlgo, points: "0000");
         return "${asa.toStringAsFixed(2)} USD ($formattedPriceAlgo USD/ALGO)";
+      }
+    } else if (widget.type == CategoryType.nft) {
+      if (_appSettingProvider.currency != Currency.algo) {
+        num totalNft = getASAModel().total?.nft ??
+            0; // after api response is changed to double, return to double?
+        double priceAlgo = getASAModel().total?.pricealgo ?? 1;
+        double algoPerUsd = 1 / priceAlgo;
+        String formattedAlgoPerUsd =
+            AppConstants.formateNumber(algoPerUsd, points: "0000");
+
+        return "${totalNft.toStringAsFixed(2)} ALGO ($formattedAlgoPerUsd ALGO/USD)";
+      } else {
+        num nft = (getASAModel().total?.nft ?? 1) /
+            (getASAModel().total?.priceusdc ?? 1);
+        double priceAlgo = getASAModel().total?.pricealgo ?? 0;
+        String formattedPriceAlgo =
+            AppConstants.formateNumber(priceAlgo, points: "0000");
+        return "${nft.toStringAsFixed(2)} USD ($formattedPriceAlgo USD/ALGO)";
       }
     }
 

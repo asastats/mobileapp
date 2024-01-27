@@ -144,6 +144,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     NftScreen(
                       key: const ValueKey("nft"),
+                      type: CategoryType.nft,
                       isSingleAddress: isSingleAddress,
                       homeScreenState: this,
                     ),
