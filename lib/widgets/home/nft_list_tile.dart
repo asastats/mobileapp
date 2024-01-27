@@ -134,6 +134,35 @@ class _NFTListTileState extends State<NFTListTile> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // estimated value - NFT Beta
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'BETA',
+                                  style: TextStyle(
+                                    color:
+                                        ColorResources.themeTextColor(context),
+                                    fontSize: Dimensions.FONT_SIZE_SMALL_8,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+                                  ),
+                                ),
+                                label('Estimated Value: '),
+                              ]),
+                          label((Provider.of<AppSettingProvider>(context)
+                                              .currency !=
+                                          Currency.algo
+                                      ? ((nft.price ?? 0) /
+                                          (widget.model?.total?.priceusdc ?? 1))
+                                      : nft.price ?? 0)
+                                  .toStringAsFixed(2) +
+                              " " +
+                              Provider.of<AppSettingProvider>(context)
+                                  .currency
+                                  .name
+                                  .toUpperCase()),
+                          const SizedBox(height: 18),
                           if (nft.nft?.listed?.text != null)
                             Wrap(
                               crossAxisAlignment: WrapCrossAlignment.end,
