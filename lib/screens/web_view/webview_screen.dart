@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
-
 import '../../providers/theme_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -42,7 +42,8 @@ class _WebViewScreenState extends State<WebViewScreen> {
       _themeProvider.addListener(() {
         url = widget.url + (_themeProvider.darkTheme ? "?dark=1" : "");
         try {
-          _controller.loadUrl(urlRequest: URLRequest(url: Uri.parse(url)));
+          WebUri webUri = WebUri(url);
+          _controller.loadUrl(urlRequest: URLRequest(url: webUri));
         } on Exception catch (e) {
           log("$runtimeType didChangeDependencies error", error: e);
         }
@@ -57,31 +58,26 @@ class _WebViewScreenState extends State<WebViewScreen> {
     showEasyLoader(false);
   }
 
-  InAppWebViewGroupOptions inAPPWebOption = InAppWebViewGroupOptions(
-      crossPlatform: InAppWebViewOptions(
-        useShouldOverrideUrlLoading: true,
-        mediaPlaybackRequiresUserGesture: true,
-        useOnDownloadStart: true,
-        supportZoom: false,
-        javaScriptEnabled: true,
-        cacheEnabled: true,
-        // userAgent: AppConstants.USER_AGENT,
-        verticalScrollBarEnabled: true,
-        horizontalScrollBarEnabled: true,
-        preferredContentMode: UserPreferredContentMode.MOBILE,
-        transparentBackground: false,
-      ),
-      android: AndroidInAppWebViewOptions(
-        useHybridComposition: true,
-        thirdPartyCookiesEnabled: true,
-        allowFileAccess: true,
-        geolocationEnabled: true,
-        domStorageEnabled: true,
-      ),
-      ios: IOSInAppWebViewOptions(
-        allowsInlineMediaPlayback: true,
-        allowsPictureInPictureMediaPlayback: true,
-      ));
+  InAppWebViewSettings inAPPWebOption = InAppWebViewSettings(
+    useShouldOverrideUrlLoading: true,
+    mediaPlaybackRequiresUserGesture: true,
+    useOnDownloadStart: true,
+    supportZoom: false,
+    javaScriptEnabled: true,
+    cacheEnabled: true,
+    // userAgent: AppConstants.USER_AGENT,
+    verticalScrollBarEnabled: true,
+    horizontalScrollBarEnabled: true,
+    preferredContentMode: UserPreferredContentMode.MOBILE,
+    transparentBackground: false,
+    useHybridComposition: true,
+    thirdPartyCookiesEnabled: true,
+    allowFileAccess: true,
+    geolocationEnabled: true,
+    domStorageEnabled: true,
+    allowsInlineMediaPlayback: true,
+    allowsPictureInPictureMediaPlayback: true,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +104,8 @@ class _WebViewScreenState extends State<WebViewScreen> {
           gestureRecognizers: Set()
             ..add(Factory<VerticalDragGestureRecognizer>(
                 () => VerticalDragGestureRecognizer())),
-          initialUrlRequest: URLRequest(url: Uri.parse(url)),
+          initialUrlRequest: URLRequest(url: WebUri(url)),
+          initialSettings: inAPPWebOption,
           onWebViewCreated: (controller) async {
             _controller = controller;
             setState(() {
@@ -116,7 +113,19 @@ class _WebViewScreenState extends State<WebViewScreen> {
             });
             showEasyLoader(_isLoading);
           },
-          initialOptions: inAPPWebOption,
+          onDownloadStartRequest: (controller, downloadStartRequest) async {
+            if (await canLaunchUrl(downloadStartRequest.url)) {
+              await launchUrl(downloadStartRequest.url);
+            } else {
+              log('Could not launch ${downloadStartRequest.url}');
+            }
+          },
+          onLoadStart: (controller, url) {
+            setState(() {
+              _isLoading = true;
+            });
+            showEasyLoader(_isLoading);
+          },
           onLoadStop: (controller, url) async {
             setState(() {
               _isLoading = false;
@@ -126,6 +135,24 @@ class _WebViewScreenState extends State<WebViewScreen> {
             controller.evaluateJavascript(
                 source:
                     "document.getElementsByClassName('z-depth-0')[0].remove();");
+          },
+          shouldOverrideUrlLoading: (controller, navigationAction) async {
+            var uri = navigationAction.request.url!;
+            if (![
+              "http",
+              "https",
+              "file",
+              "chrome",
+              "data",
+              "javascript",
+              "about"
+            ].contains(uri.scheme)) {
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+                return NavigationActionPolicy.CANCEL;
+              }
+            }
+            return NavigationActionPolicy.ALLOW;
           },
           onProgressChanged: (controller, progress) {
             setState(() {

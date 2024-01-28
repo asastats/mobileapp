@@ -35,7 +35,7 @@ class NftValues {
 }
 
 class Nfts {
-  int? value;
+  double? value;
   int? id;
   num? amount;
   Nft? nft;

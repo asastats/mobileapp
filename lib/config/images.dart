@@ -21,6 +21,8 @@ class Images {
   static String IC_CLOSE = ICONS + "ic_close.png";
   static String IC_DISCLAIMER = ICONS + "ic_disclaimer.png";
   static String IC_FAQ = ICONS + "ic_faq.png";
+  static String IC_FEATURES = ICONS + "ic_features.png";
+  static String IC_SUBSCRIPTIONS = ICONS + "ic_subscriptions.png";
   static String IC_STATE = ICONS + "ic_state.png";
   static String IC_DROP_DOWN = ICONS + "ic_drop_down.png";
   static String IC_ARROW_UP = ICONS + "ic_arrow_up.png";

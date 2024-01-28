@@ -48,6 +48,9 @@ class AppConstants {
   static const String BUY_ASA_URL =
       'https://app.tinyman.org/#/swap?asset_in=0&asset_out=393537671';
   static const String FAQ_URL = 'https://www.asastats.com/faq/';
+  static const String FEATURES_URL = 'https://www.asastats.com/features/';
+  static const String SUBSCRIPTIONS_URL =
+      'https://www.asastats.com/subscriptions/';
   static const String DISCLAIMER_URL = 'https://www.asastats.com/disclaimer/';
 
   static const String TWITTER_URL = 'https://twitter.com/asastatscom';
@@ -55,7 +58,7 @@ class AppConstants {
   static const String REDDIT_URL = 'https://www.reddit.com/r/asastats/';
   static const String GITHUB_URL = 'https://github.com/asastats';
 
-  static const int HOME_INDEX = 7;
+  static const int HOME_INDEX = 9;
   static const int ADDRESS_INDEX = 0;
   // static const int HOME_INDEX = 0;
   // static const int HOME_INDEX = 0;

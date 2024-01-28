@@ -1,7 +1,7 @@
 class Total {
   double? algo;
   double? asa;
-  int? nft;
+  double? nft;
   double? total;
   double? totalusdc;
   double? priceusdc;

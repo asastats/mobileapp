@@ -49,6 +49,14 @@ class _MenuScreenState extends State<MenuScreen> {
       key: ValueKey(AppConstants.FAQ_URL),
     ),
     const WebViewScreen(
+      url: AppConstants.FEATURES_URL,
+      key: ValueKey(AppConstants.FEATURES_URL),
+    ),
+    const WebViewScreen(
+      url: AppConstants.SUBSCRIPTIONS_URL,
+      key: ValueKey(AppConstants.SUBSCRIPTIONS_URL),
+    ),
+    const WebViewScreen(
         url: AppConstants.DISCLAIMER_URL,
         key: ValueKey(AppConstants.DISCLAIMER_URL)),
     const WebViewScreen(
@@ -73,7 +81,7 @@ class _MenuScreenState extends State<MenuScreen> {
       _asaProvider = Provider.of<ASAProvider>(context);
       if (_asaProvider.isAddressSaved() &&
           _asaProvider.getAddress().isNotEmpty) {
-        _menuProvider.setIndex(7);
+        _menuProvider.setIndex(9);
       }
     }
   }
@@ -137,6 +145,8 @@ class _MenuState extends State<Menu> {
     {"image": Images.IC_ABOUT, "title": "About"},
     {"image": Images.IC_TOKENOMICS, "title": "Tokenomics"},
     {"image": Images.IC_FAQ, "title": "FAQ"},
+    {"image": Images.IC_FEATURES, "title": "Features"},
+    {"image": Images.IC_SUBSCRIPTIONS, "title": "Subscriptions"},
     {"image": Images.IC_DISCLAIMER, "title": "Disclaimer"},
     {"image": Images.IC_BUY_ASA, "title": "Buy ASASTATS"},
     {"image": Images.IC_SETTING, "title": "Settings"},
@@ -450,7 +460,7 @@ class ListTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 45,
+        height: 35,
         margin: const EdgeInsets.only(bottom: Dimensions.PADDING_SIZE_SMALL),
         width: MediaQuery.of(context).size.width * 0.7,
         alignment: Alignment.centerLeft,

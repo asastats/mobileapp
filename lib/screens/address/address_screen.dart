@@ -226,7 +226,7 @@ class _AddressScreenState extends State<AddressScreen> {
             await _asaProvider.getAsaData(responseAddress.data);
         isMultipleAlgo = false;
         if (response.isSuccess) {
-          _menuProvider.setIndex(7);
+          _menuProvider.setIndex(9);
         }
         // var result = await Navigator.pushNamed(context, RouteList.HOME_SCREEN,arguments: {"isSingleAddress":false});
         // if (result == true) {
