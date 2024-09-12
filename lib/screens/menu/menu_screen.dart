@@ -13,7 +13,6 @@ import 'package:asa_stats/screens/settings/setting_screen.dart';
 import 'package:asa_stats/screens/web_view/webview_screen.dart';
 import 'package:asa_stats/utility/toast_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_zoom_drawer/config.dart';
 import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';

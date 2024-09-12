@@ -34,14 +34,14 @@ class Style {
         color: ColorResources.darkBlackColor,
       ),
       textTheme: TextTheme(
-        bodyText1: TextStyles.bodyText(),
-        headline1: TextStyles.headline1(),
-        headline2: TextStyles.headline2(),
-        headline3: TextStyles.headline3(),
-        headline4: TextStyles.headline4(),
-        headline5: TextStyles.headline5(),
-        headline6: TextStyles.headline6(),
-        headlineLarge: TextStyles.headlineLarge(),
+        bodyLarge: TextStyles.bodyText(), // bodyText1 -> bodyLarge
+        displayLarge: TextStyles.headline1(), // headline1 -> displayLarge
+        displayMedium: TextStyles.headline2(), // headline2 -> displayMedium
+        displaySmall: TextStyles.headline3(), // headline3 -> displaySmall
+        headlineMedium: TextStyles.headline4(), // headline4 -> headlineMedium
+        headlineSmall: TextStyles.headline5(), // headline5 -> headlineSmall
+        titleLarge: TextStyles.headline6(), // headline6 -> titleLarge
+        headlineLarge: TextStyles.headlineLarge(), // remains the same
       ),
     );
   }
