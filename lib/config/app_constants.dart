@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class AppConstants {
-  static const String APP_NAME = "ASAState Mobile App";
+  static const String APP_NAME = "ASA Stats Mobile";
   static const String FONT_FAMILY = "Oswald";
   static const String FONT_FAMILY_OUTFIT = "Outfit";
 
