@@ -617,69 +617,154 @@ Widget nftStickyHeader(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Container(
-                                width: 80,
+                                // width: 80,
                                 alignment: Alignment.centerRight,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    RichText(
-                                      textAlign: TextAlign.right,
-                                      text: TextSpan(
-                                        children: [
-                                          TextSpan(
-                                            text: miniSubTitle,
-                                            style: TextStyle(
-                                              color: isExpanded
-                                                  ? ColorResources.whiteColor
-                                                  : ColorResources
-                                                      .themeLightGrayWhiteColor(
-                                                          context),
-                                              fontSize:
-                                                  Dimensions.FONT_SIZE_SMALL_8,
-                                              fontWeight: FontWeight.w700,
-                                              fontFamily: AppConstants
-                                                  .FONT_FAMILY_OUTFIT,
-                                            ),
-                                          ),
-                                          TextSpan(
-                                            text: subTitle,
-                                            style: TextStyle(
-                                              color: isExpanded
-                                                  ? ColorResources.whiteColor
-                                                  : ColorResources
-                                                      .themeLightGrayWhiteColor(
-                                                          context),
-                                              fontSize:
-                                                  Dimensions.FONT_SIZE_DEFAULT,
-                                              fontWeight: FontWeight.w700,
-                                              fontFamily: AppConstants
-                                                  .FONT_FAMILY_OUTFIT,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Text(
-                                      appSettingProvider.currency.name
-                                          .toUpperCase(),
-                                      textAlign: TextAlign.right,
-                                      style: TextStyle(
-                                        color: isExpanded
-                                            ? ColorResources.whiteColor
-                                            : ColorResources
-                                                .themeLightGrayWhiteColor(
-                                                    context),
-                                        fontSize: Dimensions.FONT_SIZE_DEFAULT,
-                                        fontWeight: FontWeight.w700,
-                                        fontFamily:
-                                            AppConstants.FONT_FAMILY_OUTFIT,
-                                      ),
-                                    ),
-                                  ],
+                                child: Builder(
+                                  builder: (context) {
+                                    bool isLandscape =
+                                        MediaQuery.of(context).orientation ==
+                                            Orientation.landscape;
+
+                                    // condition to not wrap
+                                    return isLandscape
+                                        ? Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            children: [
+                                              RichText(
+                                                textAlign: TextAlign.right,
+                                                text: TextSpan(
+                                                  children: [
+                                                    TextSpan(
+                                                      text: miniSubTitle,
+                                                      style: TextStyle(
+                                                        color: isExpanded
+                                                            ? ColorResources
+                                                                .whiteColor
+                                                            : ColorResources
+                                                                .themeLightGrayWhiteColor(
+                                                                    context),
+                                                        fontSize: Dimensions
+                                                            .FONT_SIZE_SMALL_8,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontFamily: AppConstants
+                                                            .FONT_FAMILY_OUTFIT,
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text: subTitle,
+                                                      style: TextStyle(
+                                                        color: isExpanded
+                                                            ? ColorResources
+                                                                .whiteColor
+                                                            : ColorResources
+                                                                .themeLightGrayWhiteColor(
+                                                                    context),
+                                                        fontSize: Dimensions
+                                                            .FONT_SIZE_DEFAULT,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontFamily: AppConstants
+                                                            .FONT_FAMILY_OUTFIT,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 3),
+                                              Text(
+                                                appSettingProvider.currency.name
+                                                    .toUpperCase(),
+                                                textAlign: TextAlign.right,
+                                                style: TextStyle(
+                                                  color: isExpanded
+                                                      ? ColorResources
+                                                          .whiteColor
+                                                      : ColorResources
+                                                          .themeLightGrayWhiteColor(
+                                                              context),
+                                                  fontSize: Dimensions
+                                                      .FONT_SIZE_DEFAULT,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontFamily: AppConstants
+                                                      .FONT_FAMILY_OUTFIT,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: [
+                                              RichText(
+                                                textAlign: TextAlign.right,
+                                                text: TextSpan(
+                                                  children: [
+                                                    TextSpan(
+                                                      text: miniSubTitle,
+                                                      style: TextStyle(
+                                                        color: isExpanded
+                                                            ? ColorResources
+                                                                .whiteColor
+                                                            : ColorResources
+                                                                .themeLightGrayWhiteColor(
+                                                                    context),
+                                                        fontSize: Dimensions
+                                                            .FONT_SIZE_SMALL_8,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontFamily: AppConstants
+                                                            .FONT_FAMILY_OUTFIT,
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text: subTitle,
+                                                      style: TextStyle(
+                                                        color: isExpanded
+                                                            ? ColorResources
+                                                                .whiteColor
+                                                            : ColorResources
+                                                                .themeLightGrayWhiteColor(
+                                                                    context),
+                                                        fontSize: Dimensions
+                                                            .FONT_SIZE_DEFAULT,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontFamily: AppConstants
+                                                            .FONT_FAMILY_OUTFIT,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Text(
+                                                appSettingProvider.currency.name
+                                                    .toUpperCase(),
+                                                textAlign: TextAlign.right,
+                                                style: TextStyle(
+                                                  color: isExpanded
+                                                      ? ColorResources
+                                                          .whiteColor
+                                                      : ColorResources
+                                                          .themeLightGrayWhiteColor(
+                                                              context),
+                                                  fontSize: Dimensions
+                                                      .FONT_SIZE_DEFAULT,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontFamily: AppConstants
+                                                      .FONT_FAMILY_OUTFIT,
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                  },
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.only(left: 10),
+                                padding: const EdgeInsets.only(left: 17),
                                 child: Image.asset(
                                   isExpanded
                                       ? Images.IC_ARROW_UP
