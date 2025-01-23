@@ -6,3 +6,4 @@
 assets/json/octorand.json
 build/
 lib/.errors
+devtools_options.yaml

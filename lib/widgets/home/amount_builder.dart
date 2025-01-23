@@ -76,7 +76,12 @@ class AmountBuilder extends StatelessWidget {
                 children: [
                   TextSpan(
                     text:
-                        "${AppConstants.formateNumber(double.parse(formateAmount(amount.amount ?? 0, decimal, 6)), points: "000000")} ${amount.unit}", // conversion of usd
+
+                        /// WIP
+                        /* amount.bracket == true
+                        ? '${amount.amount}'
+                        :  */
+                        "${AppConstants.formateNumber(double.parse(formateAmount(amount.amount ?? 0, decimal, 6)), points: "0" * decimal)} ${amount.unit}", // conversion of usd
                     style: TextStyle(
                       color: (amount.amount ?? 0.0).isNegative
                           ? ColorResources.redColor
