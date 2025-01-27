@@ -7,22 +7,25 @@ import '../../config/app_constants.dart';
 import '../../config/color.dart';
 import '../../config/dimensions.dart';
 import '../../config/images.dart';
+import '../../screens/menu/menu_screen.dart';
 
 class CopyText extends StatelessWidget {
   final String text;
-  const CopyText({Key? key, required this.text}) : super(key: key);
+  const CopyText({super.key, required this.text, this.url});
+  final String? url;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        ToastService.show("Copied!");
-        await Clipboard.setData(ClipboardData(text: text));
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: url != null
+              ? () async {
+                  await launchURLApp(url!);
+                }
+              : null,
+          child: Text(
             text, //address
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.left,
@@ -33,14 +36,20 @@ class CopyText extends StatelessWidget {
               fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
             ),
           ),
-          SizedBox(width: 5.w),
-          Image.asset(
+        ),
+        SizedBox(width: 5.w),
+        GestureDetector(
+          onTap: () async {
+            ToastService.show("Copied!");
+            await Clipboard.setData(ClipboardData(text: text));
+          },
+          child: Image.asset(
             Images.IC_COPY,
             height: 20,
             width: 20,
           ),
-        ],
-      ),
+        )
+      ],
     );
   }
 }

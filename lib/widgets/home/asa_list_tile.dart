@@ -174,6 +174,7 @@ class _ASAListTile extends State<ASAListTile> {
           },
           child: CopyText(
             text: widget.values?.id.toString() ?? "",
+            url: 'https://allo.info/asset/${widget.values?.id.toString()}',
           ),
         ),
         const SizedBox(height: 8),

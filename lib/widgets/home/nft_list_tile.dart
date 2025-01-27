@@ -280,7 +280,9 @@ class _NFTListTileState extends State<NFTListTile> {
                   Expanded(
                     child: Container(
                       alignment: Alignment.centerRight,
-                      child: CopyText(text: "${nft.id ?? ""}"),
+                      child: CopyText(
+                          text: "${nft.id ?? ""}",
+                          url: 'https://allo.info/asset/${nft.id}'),
                     ),
                   ),
                 ],
