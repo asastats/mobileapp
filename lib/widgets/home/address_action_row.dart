@@ -1,6 +1,6 @@
 import 'package:asa_stats/config/color.dart';
+import 'package:asa_stats/screens/menu/menu_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:asa_stats/screens/web_view/webview_screen.dart';
 
 class AddressActionRow extends StatelessWidget {
   const AddressActionRow(
@@ -30,13 +30,8 @@ class CsvExport extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => WebViewScreen(
-              url: exportUrl,
-              key: ValueKey(exportUrl),
-            ),
-          ),
+        launchURLApp(
+          exportUrl,
         );
       },
       child: const Text(

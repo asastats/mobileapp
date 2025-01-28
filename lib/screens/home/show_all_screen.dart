@@ -211,7 +211,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                 AddressActionRow(
                     status: true,
                     exportUrl:
-                        '${AppConstants.TAX_URL}${asaModel.addresses != null && asaModel.addresses!.isNotEmpty ? asaModel.addresses!.join(', ') : ''}'),
+                        '${AppConstants.TAX_URL}${(asaModel.addresses?.length == 1) ? _asaProvider.singleAddress : _asaProvider.bundleHash}'),
                 if (asaModel.warning != null)
                   const Message(type: messageType.message),
                 if (asaModel.information != null)
