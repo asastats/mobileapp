@@ -209,9 +209,9 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                 ),
                 const SizedBox(height: 8),
                 AddressActionRow(
-                    status: true,
-                    exportUrl:
-                        '${AppConstants.TAX_URL}${(asaModel.addresses?.length == 1) ? _asaProvider.singleAddress : _asaProvider.bundleHash}'),
+                    isSingle: asaModel.addresses?.length == 1,
+                    status: asaModel.online ?? false,
+                    exportUrl: getSingleAddressForTax(_asaProvider.address)),
                 if (asaModel.warning != null)
                   const Message(type: messageType.message),
                 if (asaModel.information != null)
@@ -800,6 +800,20 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       widget.homeScreenState.setState(() {});
     }
     setState(() {});
+  }
+
+  // hacky address handling for tax report link for a single address, in cases when we navigate to single address from within a bundle
+  String getSingleAddressForTax(String asaProviderDotAddress) {
+    List<String> parts = asaProviderDotAddress
+        .split(RegExp(r'[\s,]+'))
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    if (parts.length > 1) {
+      asaProviderDotAddress = _asaProvider.singleAddress;
+    }
+
+    return ('${AppConstants.TAX_URL}${(asaModel.addresses?.length == 1) ? asaModel.addresses![0] : _asaProvider.bundleHash}');
   }
 
   Future onRefresh() async {

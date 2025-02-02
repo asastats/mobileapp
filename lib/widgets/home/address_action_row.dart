@@ -1,12 +1,18 @@
+import 'dart:math';
+
 import 'package:asa_stats/config/color.dart';
 import 'package:asa_stats/screens/menu/menu_screen.dart';
 import 'package:flutter/material.dart';
 
 class AddressActionRow extends StatelessWidget {
   const AddressActionRow(
-      {super.key, required this.status, required this.exportUrl});
+      {super.key,
+      required this.status,
+      required this.exportUrl,
+      required this.isSingle});
   final bool status;
   final String exportUrl;
+  final bool isSingle;
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +20,8 @@ class AddressActionRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       spacing: 8,
       children: [
-        Visibility(visible: status, child: const ParticipationStatus()),
+        Visibility(
+            visible: status && isSingle, child: const ParticipationStatus()),
         CsvExport(exportUrl: exportUrl)
       ],
     );
