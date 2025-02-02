@@ -18,6 +18,7 @@ import 'package:asa_stats/screens/web_view/webview_screen.dart';
 import 'package:asa_stats/utility/multiple_gesturedetector.dart';
 import 'package:asa_stats/utility/toast_service.dart';
 import 'package:asa_stats/utility/utils.dart';
+import 'package:asa_stats/widgets/home/address_action_row.dart';
 import 'package:asa_stats/widgets/home/amountHeader.dart';
 import 'package:asa_stats/widgets/home/asa_list_tile.dart';
 import 'package:asa_stats/widgets/home/not_eval_list_tile.dart';
@@ -166,7 +167,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       slivers: [
         SliverAppBar(
           automaticallyImplyLeading: false,
-          toolbarHeight: (((asaModel.addresses?.length ?? 0) > 4) ? 35 : 0) +
+          toolbarHeight: (((asaModel.addresses?.length ?? 0) > 4) ? 35 : 20) +
               (widget.type == CategoryType.nft ? 50 : 100) +
               (asaModel.warning != null ? 40 : 0) +
               (asaModel.information != null ? 40 : 0),
@@ -206,6 +207,11 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                         [],
                   ],
                 ),
+                const SizedBox(height: 8),
+                AddressActionRow(
+                    isSingle: asaModel.addresses?.length == 1,
+                    status: asaModel.online ?? false,
+                    exportUrl: getSingleAddressForTax(_asaProvider.address)),
                 if (asaModel.warning != null)
                   const Message(type: messageType.message),
                 if (asaModel.information != null)
@@ -794,6 +800,20 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       widget.homeScreenState.setState(() {});
     }
     setState(() {});
+  }
+
+  // hacky address handling for tax report link for a single address, in cases when we navigate to single address from within a bundle
+  String getSingleAddressForTax(String asaProviderDotAddress) {
+    List<String> parts = asaProviderDotAddress
+        .split(RegExp(r'[\s,]+'))
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    if (parts.length > 1) {
+      asaProviderDotAddress = _asaProvider.singleAddress;
+    }
+
+    return ('${AppConstants.TAX_URL}${(asaModel.addresses?.length == 1) ? asaModel.addresses![0] : _asaProvider.bundleHash}');
   }
 
   Future onRefresh() async {

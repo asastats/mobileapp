@@ -19,6 +19,7 @@ class ASAProvider with ChangeNotifier {
   late ASAModel _asaDataSingle;
   String _address = "";
   String _singleAddress = "";
+  String _bundleHash = '';
   bool _isLoading = false;
   bool _isCaching = true;
   Map<String, Widget> _imageProviders = {};
@@ -27,6 +28,7 @@ class ASAProvider with ChangeNotifier {
   ASAModel get asaModelSingle => _asaDataSingle;
   String get address => _address;
   String get singleAddress => _singleAddress;
+  String get bundleHash => _bundleHash;
   bool get isLoading => _isLoading;
   bool get isCaching => _isCaching;
   Map<String, Widget> get imageProviders => _imageProviders;
@@ -46,6 +48,7 @@ class ASAProvider with ChangeNotifier {
     ApiResponse apiRegisterResponse = await asaRepo.getAsaAddress(data);
     if (apiRegisterResponse.response != null &&
         apiRegisterResponse.response!.statusCode == 200) {
+      _bundleHash = apiRegisterResponse.response!.data.toString();
       responseModel = ResponseModel(
           true,
           apiRegisterResponse.response?.data.toString() ?? "Empty Data",

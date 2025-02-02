@@ -7,6 +7,7 @@ import 'values.dart';
 class ASAModel {
   List<String>? addresses;
   Total? total;
+  bool? online;
   List<Values>? values;
   List<NftValues>? nftValues;
   List<NotEval>? notEval;
@@ -21,6 +22,7 @@ class ASAModel {
   ASAModel({
     this.addresses,
     this.total,
+    this.online,
     this.values,
     this.nftValues,
     this.ratioChart,
@@ -36,6 +38,7 @@ class ASAModel {
   ASAModel copyWith({
     List<String>? addresses,
     Total? total,
+    bool? online,
     List<Values>? values,
     List<NftValues>? nftValues,
     List<NotEval>? notEval,
@@ -50,6 +53,7 @@ class ASAModel {
     return ASAModel(
       addresses: addresses ?? this.addresses,
       total: total ?? this.total,
+      online: online ?? this.online,
       values: values ?? this.values,
       nftValues: nftValues ?? this.nftValues,
       ratioChart: ratioChart ?? this.ratioChart,
@@ -66,6 +70,7 @@ class ASAModel {
   ASAModel.fromJson(Map<String, dynamic> json) {
     addresses = json['addresses'].cast<String>();
     total = json['total'] != null ? Total.fromJson(json['total']) : null;
+    online = json['online'] ?? false;
     if (json['values'] != null) {
       values = <Values>[];
       json['values'].forEach((v) {
@@ -109,6 +114,7 @@ class ASAModel {
     if (total != null) {
       data['total'] = total!.toJson();
     }
+    data['online'] = online;
     if (values != null) {
       data['values'] = values!.map((v) => v.toJson()).toList();
     }
