@@ -394,27 +394,6 @@ Widget getStickyHeader({
               children: [
                 Positioned(
                   left: 0,
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: Dimensions.PADDING_SIZE_SMALL),
-                      child: CachedNetworkImage(
-                        imageUrl: AppConstants.getAsaImage(data.id.toString()),
-                        height: 35,
-                        width: 35,
-                        errorWidget: (_, __, ___) {
-                          return const ErrorImage(height: 35, width: 35);
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 0,
                   top: 0,
                   bottom: 0,
                   child: Align(
@@ -490,6 +469,27 @@ Widget getStickyHeader({
                         ),
                       ),
                     ],
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Dimensions.PADDING_SIZE_SMALL),
+                      child: CachedNetworkImage(
+                        imageUrl: AppConstants.getAsaImage(data.id.toString()),
+                        height: 35,
+                        width: 35,
+                        errorWidget: (_, __, ___) {
+                          return const ErrorImage(height: 35, width: 35);
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ],
