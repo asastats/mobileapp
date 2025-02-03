@@ -401,8 +401,10 @@ Widget getStickyHeader({
                     child: Text(
                       "${AppConstants.formateNumber(double.parse(
                             formateAmount(
-                                data.amount ?? 0, data.asa?.decimals ?? 0, 6,
-                                utit: data.asa?.unit),
+                              data.amount ?? 0,
+                              data.asa?.decimals ?? 0,
+                              6,
+                            ),
                           ), points: "0000")}  ${data.asa?.unit ?? ""}",
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

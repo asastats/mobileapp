@@ -101,7 +101,8 @@ class AppConstants {
           formattedNumber.substring(0, formattedNumber.length - 1);
     }
 
-    return formattedNumber + (parts[1] != "0000" ? '.' + parts[1] : '');
+    return formattedNumber +
+        (int.tryParse(parts[1]) != 0 ? '.' + parts[1] : '');
   }
 
   static String removeDecimalZeroFormat(double n) {
