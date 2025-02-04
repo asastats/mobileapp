@@ -3,9 +3,11 @@ import 'dart:ffi';
 import 'package:asa_stats/config/color.dart';
 import 'package:asa_stats/config/enums.dart';
 import 'package:asa_stats/models/body/chart_data_model.dart';
+import 'package:asa_stats/utility/toast_service.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class Chart extends StatelessWidget {
   final List<ChartData> chartData;
@@ -59,12 +61,7 @@ class Chart extends StatelessWidget {
                       (touchResponse.touchedSection!.touchedSection!.value)
                           .toStringAsFixed(2);
                   print('$title $percentage %');
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      content: Text('$title $percentage %'),
-                    ),
-                  );
+                  _showTooltip(context, title, percentage);
 
                   // final touchedSection = touchResponse.touchedSection!;
                   // final int touchedIndex = touchedSection.touchedSectionIndex;
@@ -146,8 +143,7 @@ class Chart extends StatelessWidget {
     );
   }
 
-  Widget _showTooltip(BuildContext context, String? title, String? percentage) {
-    print('showing tooltip ????');
-    return Dialog(child: Text('$title $percentage %'));
+  void _showTooltip(BuildContext context, String? title, String? percentage) {
+    ToastService.show('$title $percentage %', gravity: ToastGravity.BOTTOM);
   }
 }
