@@ -1,6 +1,6 @@
-import 'package:asa_stats/config/app_constants.dart';
+import 'dart:ffi';
+
 import 'package:asa_stats/config/color.dart';
-import 'package:asa_stats/config/dimensions.dart';
 import 'package:asa_stats/config/enums.dart';
 import 'package:asa_stats/models/body/chart_data_model.dart';
 import 'package:flutter/material.dart';
@@ -10,18 +10,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class Chart extends StatelessWidget {
   final List<ChartData> chartData;
   final CategoryType type;
-  final dynamic
-      categoryScreenState; // Using dynamic since it might be different for each screen
+  final dynamic categoryScreenState;
 
   const Chart({
-    Key? key,
+    super.key,
     required this.chartData,
     required this.type,
     required this.categoryScreenState,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    late DateTime tapStartTime;
     return Column(
       children: [
         SizedBox(
@@ -32,36 +32,59 @@ class Chart extends StatelessWidget {
                   .map((data) => PieChartSectionData(
                         color: data.color,
                         value: data.y ?? 0,
-                        title: data.title ?? '',
-                        radius: 55,
-                        titleStyle: TextStyle(
-                          color: ColorResources.themeTextColor(context),
-                          fontWeight: FontWeight.w600,
-                          fontSize: Dimensions.FONT_SIZE_SMALL,
-                          fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
-                        ),
+                        showTitle: false,
+                        radius: 80,
+
+                        /// TODO: radius needs fix, must be relative to screen size? see implementation of this Chart class, on the screens.
                       ))
                   .toList(),
-              centerSpaceRadius: 40,
+              centerSpaceRadius: 0,
               sectionsSpace: 0,
               borderData: FlBorderData(show: false),
               startDegreeOffset: -90,
               pieTouchData: PieTouchData(
                 touchCallback:
                     (FlTouchEvent event, PieTouchResponse? touchResponse) {
+                  // this is some null guard
                   if (!event.isInterestedForInteractions ||
                       touchResponse == null ||
                       touchResponse.touchedSection == null) {
                     return;
                   }
-                  final touchedSection = touchResponse.touchedSection!;
-                  final int touchedIndex = touchedSection.touchedSectionIndex;
-                  final selectedLabel = chartData[touchedIndex].title ?? "";
-                  _handleSectionSelected(selectedLabel, touchedIndex);
+
+                  String? title = chartData[
+                          touchResponse.touchedSection!.touchedSectionIndex]
+                      .title;
+                  String? percentage =
+                      (touchResponse.touchedSection!.touchedSection!.value)
+                          .toStringAsFixed(2);
+                  print('$title $percentage %');
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      content: Text('$title $percentage %'),
+                    ),
+                  );
+
+                  // final touchedSection = touchResponse.touchedSection!;
+                  // final int touchedIndex = touchedSection.touchedSectionIndex;
+                  // final selectedLabel = chartData[touchedIndex].title ?? "";
+
+                  // if (event is FlTapDownEvent) {
+                  //   tapStartTime = DateTime.now();
+                  // } else if (event is FlTapUpEvent) {
+                  //   final tapDuration = DateTime.now().difference(tapStartTime);
+                  //   if (tapDuration.inMilliseconds < 500) {
+                  //     _handleSectionSelected(selectedLabel, touchedIndex);
+                  //   } else {
+                  //     print("Long press");
+                  //   }
+                  //   tapStartTime = DateTime(0);
+                  // }
                 },
               ),
             ),
-            swapAnimationDuration: const Duration(milliseconds: 400),
+            duration: const Duration(milliseconds: 400),
           ),
         ),
         buildLegend(context),
@@ -95,14 +118,14 @@ class Chart extends StatelessWidget {
   }
 
   Widget buildLegend(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 60,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: chartData.length,
         itemBuilder: (context, index) {
           return Padding(
-            padding: EdgeInsets.all(4.0),
+            padding: const EdgeInsets.all(4.0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
@@ -111,7 +134,7 @@ class Chart extends StatelessWidget {
                   height: 15,
                   color: chartData[index].color,
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Text(chartData[index].title ?? '',
                     style: TextStyle(
                         color: ColorResources.themeTextColor(context))),
@@ -121,5 +144,10 @@ class Chart extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Widget _showTooltip(BuildContext context, String? title, String? percentage) {
+    print('showing tooltip ????');
+    return Dialog(child: Text('$title $percentage %'));
   }
 }
