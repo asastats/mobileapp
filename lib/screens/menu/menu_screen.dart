@@ -52,6 +52,10 @@ class _MenuScreenState extends State<MenuScreen> {
       key: ValueKey(AppConstants.FEATURES_URL),
     ),
     const WebViewScreen(
+      url: AppConstants.SUBSCRIPTIONS_URL,
+      key: ValueKey(AppConstants.SUBSCRIPTIONS_URL),
+    ),
+    const WebViewScreen(
         url: AppConstants.DISCLAIMER_URL,
         key: ValueKey(AppConstants.DISCLAIMER_URL)),
     const WebViewScreen(
@@ -76,7 +80,7 @@ class _MenuScreenState extends State<MenuScreen> {
       _asaProvider = Provider.of<ASAProvider>(context);
       if (_asaProvider.isAddressSaved() &&
           _asaProvider.getAddress().isNotEmpty) {
-        _menuProvider.setIndex(8);
+        _menuProvider.setIndex(9);
       }
     }
   }
