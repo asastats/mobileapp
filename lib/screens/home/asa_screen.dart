@@ -200,8 +200,8 @@ class _AsaScreenState extends State<AsaScreen> {
           title: Column(
             children: [
               if (_asaProvider.getPieChartVisibility()) ...[
-                const SizedBox(height: 20),
                 Chart(
+                  paddingTop: 40,
                   chartData: chartData,
                   type: CategoryType.asa,
                   categoryScreenState: this,
