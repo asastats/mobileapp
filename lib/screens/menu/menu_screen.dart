@@ -52,10 +52,6 @@ class _MenuScreenState extends State<MenuScreen> {
       key: ValueKey(AppConstants.FEATURES_URL),
     ),
     const WebViewScreen(
-      url: AppConstants.SUBSCRIPTIONS_URL,
-      key: ValueKey(AppConstants.SUBSCRIPTIONS_URL),
-    ),
-    const WebViewScreen(
         url: AppConstants.DISCLAIMER_URL,
         key: ValueKey(AppConstants.DISCLAIMER_URL)),
     const WebViewScreen(
@@ -80,7 +76,7 @@ class _MenuScreenState extends State<MenuScreen> {
       _asaProvider = Provider.of<ASAProvider>(context);
       if (_asaProvider.isAddressSaved() &&
           _asaProvider.getAddress().isNotEmpty) {
-        _menuProvider.setIndex(9);
+        _menuProvider.setIndex(8);
       }
     }
   }
@@ -211,6 +207,9 @@ class _MenuState extends State<Menu> {
                           onTap: () {
                             if (item['image'] == Images.IC_BUY_ASA) {
                               launchURLApp(AppConstants.BUY_ASA_URL);
+                            } else if (item['image'] ==
+                                Images.IC_SUBSCRIPTIONS) {
+                              launchURLApp(AppConstants.SUBSCRIPTIONS_URL);
                             } else {
                               drawerController.toggle?.call();
                               provider.setIndex(index);
