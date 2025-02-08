@@ -207,6 +207,7 @@ class _NftScreenState extends State<NftScreen> {
                   chartData: chartData,
                   type: CategoryType.nft,
                   categoryScreenState: this,
+                  scrollController: controller,
                 ),
                 const SizedBox(height: 20),
               ]

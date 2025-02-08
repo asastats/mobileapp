@@ -14,6 +14,7 @@ class Chart extends StatefulWidget {
   final dynamic categoryScreenState;
   final ScrollController? scrollController;
   final double? paddingTop;
+  final bool enableScrollOnSectionTap;
 
   const Chart({
     super.key,
@@ -22,6 +23,7 @@ class Chart extends StatefulWidget {
     required this.categoryScreenState,
     this.scrollController,
     this.paddingTop,
+    this.enableScrollOnSectionTap = true,
   });
 
   @override
@@ -33,6 +35,22 @@ class _ChartState extends State<Chart> {
   int? _lastTouchedIndex;
   // ignore: unused_field
   DateTime? _tapDownTime;
+
+  late List<bool> _isVisible;
+
+  @override
+  void initState() {
+    super.initState();
+    _isVisible = List<bool>.filled(widget.chartData.length, true);
+  }
+
+  @override
+  void didUpdateWidget(covariant Chart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.chartData.length != oldWidget.chartData.length) {
+      _isVisible = List<bool>.filled(widget.chartData.length, true);
+    }
+  }
 
   void _startTouchTimer(BuildContext context, String label, int index) {
     _touchTimer?.cancel();
@@ -48,7 +66,9 @@ class _ChartState extends State<Chart> {
     if (_touchTimer != null && _touchTimer!.isActive) {
       _touchTimer!.cancel();
       _touchTimer = null;
-      _handleSectionSelected(context, label, index);
+      if (widget.enableScrollOnSectionTap) {
+        _handleSectionSelected(context, label, index);
+      }
     }
     _lastTouchedIndex = null;
   }
@@ -87,6 +107,23 @@ class _ChartState extends State<Chart> {
 
   Widget _buildPieChart(
       double pieChartWidth, double containerHeight, double pieChartRadius) {
+    final List<int> visibleIndexes = [];
+    final List<PieChartSectionData> visibleSections = [];
+    for (int i = 0; i < widget.chartData.length; i++) {
+      if (_isVisible[i]) {
+        visibleIndexes.add(i);
+        final data = widget.chartData[i];
+        visibleSections.add(
+          PieChartSectionData(
+            color: data.color,
+            value: data.y ?? 0,
+            showTitle: false,
+            radius: pieChartRadius,
+          ),
+        );
+      }
+    }
+
     return SizedBox(
       width: pieChartWidth,
       height: containerHeight,
@@ -94,16 +131,7 @@ class _ChartState extends State<Chart> {
         children: [
           PieChart(
             PieChartData(
-              sections: widget.chartData
-                  .map(
-                    (data) => PieChartSectionData(
-                      color: data.color,
-                      value: data.y ?? 0,
-                      showTitle: false,
-                      radius: pieChartRadius,
-                    ),
-                  )
-                  .toList(),
+              sections: visibleSections,
               centerSpaceRadius: 0,
               sectionsSpace: 0,
               borderData: FlBorderData(show: false),
@@ -113,8 +141,11 @@ class _ChartState extends State<Chart> {
                     (FlTouchEvent event, PieTouchResponse? touchResponse) {
                   if (touchResponse != null &&
                       touchResponse.touchedSection != null) {
-                    _lastTouchedIndex =
+                    final int touchedIndex =
                         touchResponse.touchedSection!.touchedSectionIndex;
+                    if (touchedIndex < visibleIndexes.length) {
+                      _lastTouchedIndex = visibleIndexes[touchedIndex];
+                    }
                   }
                 },
               ),
@@ -160,11 +191,14 @@ class _ChartState extends State<Chart> {
           itemBuilder: (context, index) {
             final String label = widget.chartData[index].title ?? "";
             return GestureDetector(
-              onTapDown: (_) => _startTouchTimer(context, label, index),
-              onTapUp: (_) => _cancelTouchTimerAndScroll(context, label, index),
-              onTapCancel: () {
-                _touchTimer?.cancel();
-                _touchTimer = null;
+              onLongPress: () {
+                _showTooltip(context, label,
+                    widget.chartData[index].y?.toStringAsFixed(2));
+              },
+              onTap: () {
+                setState(() {
+                  _isVisible[index] = !_isVisible[index];
+                });
               },
               child: Padding(
                 padding: const EdgeInsets.all(4.0),
@@ -182,6 +216,9 @@ class _ChartState extends State<Chart> {
                         label,
                         style: TextStyle(
                           color: ColorResources.themeTextColor(context),
+                          decoration: _isVisible[index]
+                              ? TextDecoration.none
+                              : TextDecoration.lineThrough,
                         ),
                       ),
                     ),
@@ -190,27 +227,6 @@ class _ChartState extends State<Chart> {
               ),
             );
           },
-        ),
-        // Top gradient overlay.
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: IgnorePointer(
-            child: Container(
-              height: 20,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).scaffoldBackgroundColor,
-                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.0),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-          ),
         ),
         Positioned(
           bottom: 0,

@@ -296,6 +296,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                   chartData: chartData,
                   type: widget.type,
                   categoryScreenState: this,
+                  enableScrollOnSectionTap: false,
                 ),
                 const SizedBox(height: 20),
               ]
