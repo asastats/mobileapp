@@ -74,30 +74,39 @@ class _ChartState extends State<Chart> {
   }
 
   void _handleSectionSelected(BuildContext context, String label, int index) {
-    widget.categoryScreenState.selectedLabel = label;
-    widget.categoryScreenState.asaId = label;
-
-    final ScrollController sc =
-        widget.scrollController ?? widget.categoryScreenState.controller;
-
-    if (sc.position.maxScrollExtent >
-        (MediaQuery.of(context).size.height - 250)) {
-      if (label.toLowerCase() == "nft") {
-        sc.animateTo(
-          (270.h) +
-              ((widget.categoryScreenState.asaModel.values?.length ?? 0) *
-                  57.h) +
-              21.h,
-          duration: const Duration(seconds: 2),
-          curve: Curves.fastOutSlowIn,
-        );
-        return;
+    final parentScreenState = widget.categoryScreenState;
+    String selectedAssetId = label;
+    if (widget.type == CategoryType.asa) {
+      if (parentScreenState.asaModel.values != null) {
+        for (var value in parentScreenState.asaModel.values!) {
+          if (value.asa?.unit == label) {
+            selectedAssetId = value.asa?.id.toString() ?? label;
+            break;
+          }
+        }
       }
-      sc.animateTo(
-        (270.h) + (index * 57.h),
-        duration: const Duration(seconds: 2),
-        curve: Curves.fastOutSlowIn,
-      );
+    } else if (widget.type == CategoryType.nft) {
+      if (parentScreenState.asaModel.nftValues != null) {
+        for (var value in parentScreenState.asaModel.nftValues!) {
+          if (value.collection == label) {
+            selectedAssetId = value.collection.toString();
+            break;
+          }
+        }
+      }
+    }
+    parentScreenState.selectedLabel = label;
+    parentScreenState.asaId = selectedAssetId;
+    if (parentScreenState is State) {
+      parentScreenState.setState(() {});
+    }
+    try {
+      parentScreenState.onListItemTap(index, animate: true);
+    } catch (_) {
+      final ScrollController sc =
+          widget.scrollController ?? parentScreenState.controller;
+      sc.animateTo((140.h) + (index * 57.h),
+          duration: const Duration(seconds: 1), curve: Curves.fastOutSlowIn);
     }
   }
 
