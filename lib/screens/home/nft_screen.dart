@@ -308,6 +308,9 @@ class _NftScreenState extends State<NftScreen> {
         ..add(SliverAppBar(
           toolbarHeight: height.toDouble() + 7,
           title: nftStickyHeader(
+            hash: (data.nfts != null && data.nfts!.isNotEmpty)
+                ? data.nfts!.first.nft?.hash
+                : null,
             context: context,
             height: height,
             isExpanded: (asaId == data.collection.toString()),

@@ -112,7 +112,7 @@ class _NFTListTileState extends State<NFTListTile> {
                     child: Provider.of<ASAProvider>(context, listen: false)
                             .imageProviders[nft.nft?.path ?? ""] ??
                         CachedNetworkImage(
-                          // cacheKey: nft.nft?.path ?? "",
+                          cacheKey: nft.nft?.hash ?? "",
                           imageUrl:
                               AppConstants.getNFTImage(nft.nft?.path ?? ""),
                           height: 156,
@@ -479,7 +479,8 @@ Widget nftStickyHeader(
     required int crossAxisCount,
     required bool isExpanded,
     required Function() onTap,
-    required int height}) {
+    required int height,
+    String? hash}) {
   return GestureDetector(
     onTap: onTap,
     child: Container(
@@ -554,6 +555,7 @@ Widget nftStickyHeader(
                                       : images.length,
                                   itemBuilder: (_, index) {
                                     return NFTHeaderImage(
+                                        hash: hash,
                                         url: AppConstants.getNFTImage(
                                             images[index]));
                                   },
@@ -810,6 +812,7 @@ Widget nftStickyHeader(
                               shrinkWrap: true,
                               itemBuilder: (_, index) {
                                 return NFTHeaderImage(
+                                  hash: hash,
                                   url: AppConstants.getNFTImage(images[
                                       (images.length > crossAxisCount)
                                           ? (index + crossAxisCount)
@@ -830,8 +833,10 @@ Widget nftStickyHeader(
 }
 
 class NFTHeaderImage extends StatelessWidget {
+  final String? hash;
   final String url;
-  const NFTHeaderImage({Key? key, required this.url}) : super(key: key);
+  const NFTHeaderImage({Key? key, required this.url, this.hash})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -840,6 +845,7 @@ class NFTHeaderImage extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(5),
         child: CachedNetworkImage(
+          cacheKey: hash,
           imageUrl: url,
           height: 35,
           width: 35,
