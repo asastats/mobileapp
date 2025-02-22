@@ -88,6 +88,7 @@ class Nft {
   Map<String, dynamic>? attrs;
   String? title;
   String? desc;
+  String? hash;
 
   Nft(
       {this.id,
@@ -104,7 +105,8 @@ class Nft {
       this.floor,
       this.attrs,
       this.title,
-      this.desc});
+      this.desc,
+      this.hash});
 
   Nft.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -127,6 +129,7 @@ class Nft {
         : null;
     title = json['title'];
     desc = json['desc'];
+    hash = json['hash'];
   }
 
   Map<String, dynamic> toJson() {
@@ -160,6 +163,7 @@ class Nft {
     }
     data['title'] = title;
     data['desc'] = desc;
+    data['hash'] = hash;
     return data;
   }
 }

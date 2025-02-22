@@ -26,6 +26,7 @@ import 'package:asa_stats/widgets/home/not_eval_list_tile.dart';
 import 'package:asa_stats/widgets/progressbar.dart';
 import 'package:asa_stats/widgets/refresh_widget.dart';
 import 'package:asa_stats/widgets/theme_search_field.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -479,6 +480,9 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
         ..add(SliverAppBar(
           toolbarHeight: height.toDouble() + 7,
           title: nftStickyHeader(
+            hash: (data.nfts != null && data.nfts!.isNotEmpty)
+                ? data.nfts!.first.nft?.hash
+                : null,
             context: context,
             height: height,
             isExpanded: (asaId == data.collection.toString()),
@@ -740,42 +744,41 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   }
 
   void preCacheImages(List<NftValues> list) async {
-    Map<String, Image> providers = {};
+    Map<String, CachedNetworkImage> providers = {};
     _asaProvider.isCaching = true;
     for (NftValues nft in list) {
       for (Nfts n in (nft.nfts ?? [])) {
-        // if (!_asaProvider.imageProviders.containsKey(n.nft?.tpath ?? "")) {
-        //   Image tImage = Image.network(
-        //     AppConstants.getNFTImage(n.nft?.tpath ?? ""),
-        //     height: 35,
-        //     width: 35,
-        //   );
-        //   providers.addAll({n.nft?.tpath ?? "": tImage});
-        //   await precacheImage(tImage.image, context, size: const Size(35, 35));
-        // }
-        if (!_asaProvider.imageProviders.containsKey(n.nft?.path ?? "")) {
-          Image image = Image.network(
-            AppConstants.getNFTImage(n.nft?.path ?? ""),
+        String? imagePath = n.nft?.path ?? "";
+        String? imageHash = n.nft?.hash ?? "";
+
+        if (!_asaProvider.imageProviders.containsKey(imagePath) &&
+            imagePath.isNotEmpty) {
+          CachedNetworkImage cachedImage = CachedNetworkImage(
+            imageUrl: AppConstants.getNFTImage(imagePath),
             height: 156,
             width: 156,
+            cacheKey: imageHash,
+            placeholder: (context, url) => const CircularProgressIndicator(),
+            errorWidget: (context, url, error) => const Icon(Icons.error),
           );
-          providers.addAll({n.nft?.path ?? "": image});
-          precacheImage(image.image, context, size: const Size(156, 156),
-              onError: (o, s) {
-            log("pre caching error", stackTrace: s, name: "Error", error: o);
-          }).then((value) => log(
-              "Caches image[${nft.nfts?.indexOf(n)}] ${n.nft?.path ?? ""}",
-              name: "Caching info"));
+
+          providers[imagePath] = cachedImage;
+
+          log("Caching image[${nft.nfts?.indexOf(n)}] $imagePath with cacheKey: $imageHash",
+              name: "Caching Info");
+
           await Future.delayed(const Duration(milliseconds: 100));
         }
       }
     }
+
     _asaProvider.isCaching = false;
     setState(() {});
     providers.forEach((key, value) {
       _asaProvider.imageProviders[key] = value;
     });
-    debugPrint("Pre caching done");
+
+    debugPrint("Image caching with CachedNetworkImage completed.");
   }
 
   void onAddressTap(element) async {
@@ -837,94 +840,3 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
     return;
   }
 }
-
-// class Chart extends StatelessWidget {
-//   final List<ChartData> chartData;
-//   final CategoryType type;
-//   final _ShowAllScreenState categoryScreenState;
-//   const Chart({
-//     Key? key,
-//     required this.chartData,
-//     required this.type,
-//     required this.categoryScreenState,
-//   }) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return SizedBox(
-//       height: 200,
-//       child: chartData.isEmpty
-//           ? Container()
-//           : SfCircularChart(
-//               legend: Legend(
-//                 position: LegendPosition.bottom,
-//                 orientation: LegendItemOrientation.horizontal,
-//                 isVisible: true,
-//                 height: "30%",
-//                 isResponsive: true,
-//                 toggleSeriesVisibility: true,
-//                 iconWidth: 15,
-//                 iconHeight: 15,
-//                 padding: 12.w,
-//                 // width: type != CategoryType.all ? "100%" : "60%",
-//                 alignment: ChartAlignment.center,
-//                 overflowMode: LegendItemOverflowMode.scroll,
-//                 textStyle: TextStyle(
-//                   color: ColorResources.themeTextColor(context),
-//                   fontWeight: FontWeight.w600,
-//                   fontSize: Dimensions.FONT_SIZE_SMALL,
-//                   fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
-//                 ),
-//               ),
-//               onLegendTapped: (legend) {
-//                 // setState(() {});
-//               },
-//               onDataLabelTapped: (DataLabelTapDetails data) {},
-//               series: <CircularSeries>[
-//                 PieSeries<ChartData, String>(
-//                   dataSource: chartData,
-//                   legendIconType: LegendIconType.rectangle,
-//                   onPointTap: (ChartPointDetails details) {
-//                     if (details.pointIndex != null) {
-//                       categoryScreenState.selectedLabel =
-//                           chartData[details.pointIndex ?? -1].title ?? "";
-//                       categoryScreenState.asaId =
-//                           categoryScreenState.selectedLabel;
-//                     }
-//                     if (categoryScreenState
-//                             .controller.position.maxScrollExtent >
-//                         (MediaQuery.of(context).size.height - 250)) {
-//                       if (categoryScreenState.selectedLabel.toLowerCase() ==
-//                           "nft") {
-//                         categoryScreenState.controller.animateTo(
-//                           ((270.h) +
-//                               ((categoryScreenState.asaModel.values?.length ??
-//                                       0) *
-//                                   57.h) +
-//                               21.h), // Top padding + total asa padding + space
-//                           duration: const Duration(seconds: 2),
-//                           curve: Curves.fastOutSlowIn,
-//                         );
-//                         return;
-//                       }
-//                       categoryScreenState.controller.animateTo(
-//                         (270.h) +
-//                             ((details.pointIndex ?? 0) *
-//                                 57.h), // Top padding + above total asa padding
-//                         duration: const Duration(seconds: 2),
-//                         curve: Curves.fastOutSlowIn,
-//                       );
-//                     }
-//                   },
-//                   pointColorMapper: (ChartData data, i) => data.color,
-//                   xValueMapper: (ChartData data, _) => data.title,
-//                   yValueMapper: (ChartData data, _) => data.y,
-//                   animationDelay: 400,
-//                   // Radius of pie
-//                   radius: '100%',
-//                 )
-//               ],
-//             ),
-//     );
-//   }
-// }

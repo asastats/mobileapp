@@ -1,12 +1,8 @@
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:asa_stats/config/app_constants.dart';
 import 'package:asa_stats/config/color.dart';
 import 'package:asa_stats/config/dimensions.dart';
 import 'package:asa_stats/config/enums.dart';
 import 'package:asa_stats/main.dart';
-import 'package:asa_stats/models/response/asa_model.dart';
 import 'package:asa_stats/providers/asa_provider.dart';
 import 'package:asa_stats/providers/menu_provider.dart';
 import 'package:asa_stats/screens/home/show_all_screen.dart';
@@ -16,7 +12,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/response/nftValues.dart';
 import 'asa_screen.dart';
 import 'nft_screen.dart';
 
@@ -52,21 +47,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (_isInit) {
       _asaProvider = Provider.of<ASAProvider>(context, listen: false);
       _menuProvider = Provider.of<MenuProvider>(context, listen: false);
-      // preCacheImages(_asaProvider.asaModel.nftValues ?? []);
       _isInit = false;
     }
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     isSingleAddress = widget.isSingleAddress;
-    // var argument = ModalRoute.of(context)?.settings.arguments;
-    // if (argument != null) {
-    //   argument as Map<String, dynamic>;
-    //   if (argument.isNotEmpty) {
-    //  isSingleAddress = widget.isSingleAddress;
-    //     // preCacheImages(_asaProvider.asaModel.nftValues ?? []);
-    //   }
-    // } else {
-    //   isSingleAddress = false;
-    // }
   }
 
   @override
@@ -158,55 +142,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Future<ASAModel> readJsonFile(String filePath) async {
-    final String response = await rootBundle.loadString(filePath);
-    var map = jsonDecode(response);
-    return ASAModel.fromJson(map);
-  }
-
   void initController() {
     tabController = TabController(length: 3, vsync: this)
       ..addListener(() {
         setState(() {});
       });
-  }
-
-  void preCacheImages(List<NftValues> list) async {
-    Map<String, Image> providers = {};
-    _asaProvider.isCaching = true;
-    for (NftValues nft in list) {
-      for (Nfts n in (nft.nfts ?? [])) {
-        // if (!_asaProvider.imageProviders.containsKey(n.nft?.tpath ?? "")) {
-        //   Image tImage = Image.network(
-        //     AppConstants.getNFTImage(n.nft?.tpath ?? ""),
-        //     height: 35,
-        //     width: 35,
-        //   );
-        //   providers.addAll({n.nft?.tpath ?? "": tImage});
-        //   await precacheImage(tImage.image, context, size: const Size(35, 35));
-        // }
-        if (!_asaProvider.imageProviders.containsKey(n.nft?.path ?? "")) {
-          Image image = Image.network(
-            AppConstants.getNFTImage(n.nft?.path ?? ""),
-            height: 156,
-            width: 156,
-          );
-          providers.addAll({n.nft?.path ?? "": image});
-          await precacheImage(image.image, context, size: const Size(156, 156),
-              onError: (o, s) {
-            log("pre caching error", stackTrace: s, name: "Error", error: o);
-          }).then((value) =>
-              log("Caches image ${n.nft?.path ?? ""}", name: "Caching info"));
-        }
-      }
-    }
-    _asaProvider.isCaching = false;
-    _asaProvider.notifyListeners();
-    setState(() {});
-    providers.forEach((key, value) {
-      _asaProvider.imageProviders[key] = value;
-    });
-    debugPrint("Pre caching done");
   }
 }
 
