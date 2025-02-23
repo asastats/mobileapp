@@ -744,41 +744,32 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   }
 
   void preCacheImages(List<NftValues> list) async {
-    Map<String, CachedNetworkImage> providers = {};
     _asaProvider.isCaching = true;
+
     for (NftValues nft in list) {
       for (Nfts n in (nft.nfts ?? [])) {
         String? imagePath = n.nft?.path ?? "";
         String? imageHash = n.nft?.hash ?? "";
 
         if (!_asaProvider.imageProviders.containsKey(imagePath) &&
-            imagePath.isNotEmpty) {
-          CachedNetworkImage cachedImage = CachedNetworkImage(
-            imageUrl: AppConstants.getNFTImage(imagePath),
+            imagePath.isNotEmpty &&
+            (imageHash.isEmpty)) {
+          Image image = Image.network(
+            AppConstants.getNFTImage(imagePath),
             height: 156,
             width: 156,
-            cacheKey: imageHash,
-            placeholder: (context, url) => const CircularProgressIndicator(),
-            errorWidget: (context, url, error) => const Icon(Icons.error),
           );
 
-          providers[imagePath] = cachedImage;
+          await precacheImage(image.image, context);
+          _asaProvider.imageProviders[imagePath] = image;
 
-          log("Caching image[${nft.nfts?.indexOf(n)}] $imagePath with cacheKey: $imageHash",
-              name: "Caching Info");
-
-          await Future.delayed(const Duration(milliseconds: 100));
+          log("Pre-cached image $imagePath", name: "Image Caching");
         }
       }
     }
 
     _asaProvider.isCaching = false;
     setState(() {});
-    providers.forEach((key, value) {
-      _asaProvider.imageProviders[key] = value;
-    });
-
-    debugPrint("Image caching with CachedNetworkImage completed.");
   }
 
   void onAddressTap(element) async {

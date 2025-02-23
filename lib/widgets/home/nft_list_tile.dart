@@ -94,6 +94,9 @@ class _NFTListTileState extends State<NFTListTile> {
   }
 
   Widget nft(BuildContext context, {required Nfts nft, bool hasNext = false}) {
+    String imagePath = nft.nft?.path ?? "";
+    String? imageHash = nft.nft?.hash;
+
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.only(top: 7, bottom: 15),
@@ -109,21 +112,19 @@ class _NFTListTileState extends State<NFTListTile> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(5),
-                    child: Provider.of<ASAProvider>(context, listen: false)
-                            .imageProviders[nft.nft?.path ?? ""] ??
-                        CachedNetworkImage(
-                          cacheKey: nft.nft?.hash ?? "",
-                          imageUrl:
-                              AppConstants.getNFTImage(nft.nft?.path ?? ""),
-                          height: 156,
-                          width: 156,
-                          fit: BoxFit.fill,
-                          progressIndicatorBuilder: (_, __, ___) {
-                            return const CupertinoActivityIndicator();
-                          },
-                          errorWidget: (context, o, s) =>
-                              const ErrorImage(height: 156, width: 156),
-                        ),
+                    child: CachedNetworkImage(
+                      cacheKey:
+                          imageHash /* ?.isNotEmpty == true ? null : imagePath, */,
+                      imageUrl: AppConstants.getNFTImage(imagePath),
+                      height: 156,
+                      width: 156,
+                      fit: BoxFit.fill,
+                      progressIndicatorBuilder: (_, __, ___) {
+                        return const CupertinoActivityIndicator();
+                      },
+                      errorWidget: (context, o, s) =>
+                          const ErrorImage(height: 156, width: 156),
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -531,38 +532,6 @@ Widget nftStickyHeader(
                     alignment: Alignment.center,
                     children: [
                       Positioned(
-                        right: 0,
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          alignment: Alignment.topCenter,
-                          width: (images.length > crossAxisCount
-                                  ? (crossAxisCount * 39)
-                                  : (images.length * 39)) +
-                              4,
-                          height: 39,
-                          margin: const EdgeInsets.only(top: 6, bottom: 5),
-                          child: images.isEmpty
-                              ? null
-                              : ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  shrinkWrap: true,
-                                  padding: EdgeInsets.zero,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: images.length > crossAxisCount
-                                      ? crossAxisCount
-                                      : images.length,
-                                  itemBuilder: (_, index) {
-                                    return NFTHeaderImage(
-                                        hash: hash,
-                                        url: AppConstants.getNFTImage(
-                                            images[index]));
-                                  },
-                                ),
-                        ),
-                      ),
-                      Positioned(
                         left: 0,
                         top: images.length > 3 ? 20 : 0,
                         bottom: images.length > 3 ? null : 0,
@@ -782,6 +751,38 @@ Widget nftStickyHeader(
                               ),
                             ],
                           ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 0,
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          alignment: Alignment.topCenter,
+                          width: (images.length > crossAxisCount
+                                  ? (crossAxisCount * 39)
+                                  : (images.length * 39)) +
+                              4,
+                          height: 39,
+                          margin: const EdgeInsets.only(top: 6, bottom: 5),
+                          child: images.isEmpty
+                              ? null
+                              : ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  shrinkWrap: true,
+                                  padding: EdgeInsets.zero,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: images.length > crossAxisCount
+                                      ? crossAxisCount
+                                      : images.length,
+                                  itemBuilder: (_, index) {
+                                    return NFTHeaderImage(
+                                        hash: hash,
+                                        url: AppConstants.getNFTImage(
+                                            images[index]));
+                                  },
+                                ),
                         ),
                       ),
                     ],

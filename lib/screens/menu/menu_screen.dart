@@ -33,7 +33,10 @@ class _MenuScreenState extends State<MenuScreen> {
 
   bool _isInit = true;
 
-  //Widget List
+  // Widget List
+  // The indices of this list determine which screen is displayed based on the selected index.
+  // When the MenuProvider's selectedIndex is set, the corresponding widget is rendered.
+
   final List<Widget> _widgetList = [
     const AddressScreen(),
     const WebViewScreen(
