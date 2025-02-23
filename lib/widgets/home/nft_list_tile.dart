@@ -261,31 +261,42 @@ class _NFTListTileState extends State<NFTListTile> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Expanded(
-                    child: Container(
-                      alignment: Alignment.centerLeft,
-                      child: value(
-                        "${nft.nft?.unit} ${nft.amount ?? 0}/${nft.nft?.total ?? 0}",
-                        maxLine: 2,
+                      child: Column(
+                    children: [
+                      Container(
+                        alignment: Alignment.centerLeft,
+                        child: value(
+                          "${nft.nft?.unit} ${nft.amount ?? 0}/${nft.nft?.total ?? 0}",
+                          maxLine: 2,
+                        ),
                       ),
-                    ),
-                  ),
+                      Container(
+                        alignment: Alignment.centerLeft,
+                        child: CopyText(
+                            text: "${nft.id ?? ""}",
+                            url: 'https://allo.info/asset/${nft.id}'),
+                      )
+                    ],
+                  )),
                   Expanded(
-                    child: Container(
-                      alignment: Alignment.center,
-                      child: value(
-                        nft.nft?.name ?? "",
-                        maxLine: 2,
+                      child: Column(
+                    children: [
+                      Container(
+                        alignment: Alignment.centerRight,
+                        child: value(
+                          nft.nft?.name ?? "",
+                          maxLine: 2,
+                        ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      alignment: Alignment.centerRight,
-                      child: CopyText(
-                          text: "${nft.id ?? ""}",
-                          url: 'https://allo.info/asset/${nft.id}'),
-                    ),
-                  ),
+                      Container(
+                        alignment: Alignment.centerRight,
+                        child: value(
+                          "NFT RARITY",
+                          maxLine: 2,
+                        ),
+                      )
+                    ],
+                  )),
                 ],
               ),
               SizedBox(height: 10.h),
