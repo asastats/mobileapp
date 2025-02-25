@@ -1,9 +1,5 @@
-import 'dart:developer';
-
-import 'package:flutter/material.dart';
 import 'package:asa_stats/data/repository/app_setting_repo.dart';
 import 'package:asa_stats/models/response/asa_model.dart';
-import 'package:asa_stats/providers/asa_provider.dart';
 import 'package:asa_stats/screens/menu/menu_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -151,18 +147,8 @@ class _NFTListTileState extends State<NFTListTile> {
                                 ),
                                 label('Estimated Value: '),
                               ]),
-                          label((Provider.of<AppSettingProvider>(context)
-                                              .currency !=
-                                          Currency.algo
-                                      ? ((nft.price ?? 0) /
-                                          (widget.model?.total?.priceusdc ?? 1))
-                                      : nft.price ?? 0)
-                                  .toStringAsFixed(2) +
-                              " " +
-                              Provider.of<AppSettingProvider>(context)
-                                  .currency
-                                  .name
-                                  .toUpperCase()),
+                          label(
+                              "${(Provider.of<AppSettingProvider>(context).currency != Currency.algo ? ((nft.price ?? 0) / (widget.model?.total?.priceusdc ?? 1)) : nft.price ?? 0).toStringAsFixed(2)} ${Provider.of<AppSettingProvider>(context).currency.name.toUpperCase()}"),
                           const SizedBox(height: 18),
                           if (nft.nft?.listed?.text != null)
                             Wrap(
@@ -209,22 +195,7 @@ class _NFTListTileState extends State<NFTListTile> {
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: containerBox(
-                                      (Provider.of<AppSettingProvider>(context)
-                                                          .currency !=
-                                                      Currency.algo
-                                                  ? ((nft.nft?.listed?.price ??
-                                                          0) /
-                                                      (widget.model?.total
-                                                              ?.priceusdc ??
-                                                          1))
-                                                  : nft.nft?.listed?.price ?? 0)
-                                              .toStringAsFixed(2) +
-                                          " " +
-                                          Provider.of<AppSettingProvider>(
-                                                  context)
-                                              .currency
-                                              .name
-                                              .toUpperCase()),
+                                      "${(Provider.of<AppSettingProvider>(context).currency != Currency.algo ? ((nft.nft?.listed?.price ?? 0) / (widget.model?.total?.priceusdc ?? 1)) : nft.nft?.listed?.price ?? 0).toStringAsFixed(2)} ${Provider.of<AppSettingProvider>(context).currency.name.toUpperCase()}"),
                                 ),
                               ],
                             ),
@@ -288,12 +259,12 @@ class _NFTListTileState extends State<NFTListTile> {
                           maxLine: 2,
                         ),
                       ),
-                      Container(
-                        alignment: Alignment.centerRight,
-                        child: value(
-                          "NFT RARITY",
-                          maxLine: 2,
-                        ),
+                      Visibility(
+                        visible: nft.nft?.rarity != "",
+                        child: Container(
+                            alignment: Alignment.centerRight,
+                            child: rarityValue(
+                                context, "Rarity: ", nft.nft?.rarity)),
                       )
                     ],
                   )),
@@ -359,7 +330,7 @@ class _NFTListTileState extends State<NFTListTile> {
       child: Text(
         title,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
+        style: const TextStyle(
           color: ColorResources.whiteColor,
           fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
           fontSize: Dimensions.FONT_SIZE_SMALL_10,
@@ -403,23 +374,41 @@ class _NFTListTileState extends State<NFTListTile> {
     );
   }
 
+  Widget rarityValue(BuildContext context, String label, String? value) {
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: label,
+            style: TextStyle(
+              color: ColorResources.themeTextColor(context),
+              fontWeight: FontWeight.bold,
+              fontSize: Dimensions.FONT_SIZE_SMALL,
+              fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+            ),
+          ),
+          TextSpan(
+            text: value ?? '',
+            style: TextStyle(
+              fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+              fontSize: Dimensions.FONT_SIZE_SMALL,
+              fontWeight: FontWeight.normal,
+              color: Provider.of<ThemeProvider>(context).darkTheme
+                  ? ColorResources.whiteColor
+                  : const Color(0xffA8A7A7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget transaction({required TransType type, required Transaction trans}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         label(
-            "${type.name} ${type == TransType.Floor ? "price" : "purchase"}: " +
-                (Provider.of<AppSettingProvider>(context).currency !=
-                            Currency.algo
-                        ? ((trans.price ?? 0) /
-                            (widget.model?.total?.priceusdc ?? 1))
-                        : trans.price ?? 0)
-                    .toStringAsFixed(2) +
-                " " +
-                Provider.of<AppSettingProvider>(context)
-                    .currency
-                    .name
-                    .toUpperCase()),
+            "${type.name} ${type == TransType.Floor ? "price" : "purchase"}: ${(Provider.of<AppSettingProvider>(context).currency != Currency.algo ? ((trans.price ?? 0) / (widget.model?.total?.priceusdc ?? 1)) : trans.price ?? 0).toStringAsFixed(2)} ${Provider.of<AppSettingProvider>(context).currency.name.toUpperCase()}"),
         if (type == TransType.Floor) ...[
           const SizedBox(height: 4),
           RichText(
@@ -467,15 +456,15 @@ class _NFTListTileState extends State<NFTListTile> {
   String timePassed(int interval) {
     String prefix;
     if (interval < 91) {
-      prefix = (interval).toString() + " seconds";
+      prefix = "$interval seconds";
     } else if (interval < 5460) {
-      prefix = (interval ~/ 60).toString() + " minutes";
+      prefix = "${interval ~/ 60} minutes";
     } else if (interval < 133200) {
-      prefix = (interval ~/ 3600).toString() + " hours";
+      prefix = "${interval ~/ 3600} hours";
     } else {
-      prefix = (interval ~/ 86400).toString() + " days";
+      prefix = "${interval ~/ 86400} days";
     }
-    return prefix + " ago on ";
+    return "$prefix ago on ";
   }
 }
 
@@ -847,8 +836,7 @@ Widget nftStickyHeader(
 class NFTHeaderImage extends StatelessWidget {
   final String? hash;
   final String url;
-  const NFTHeaderImage({Key? key, required this.url, this.hash})
-      : super(key: key);
+  const NFTHeaderImage({super.key, required this.url, this.hash});
 
   @override
   Widget build(BuildContext context) {
