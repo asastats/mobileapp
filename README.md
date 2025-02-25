@@ -3,6 +3,15 @@
 ## Introduction
 Welcome to ASA Stats Mobile's official repository! Written with Flutter, it is an iOS/Android application used to track and evaluate Algorand Standard Assets (ASA) and NFTs in custody of an Algorand wallet (address).
 
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/df085ce9-1b80-4b1c-a374-98e8c41954f2" width="100"/></td>
+    <td><img src="https://github.com/user-attachments/assets/e2c2249b-35cc-4ce6-9fca-4cac9fd8fd85" width="100"/></td>
+    <td><img src="https://github.com/user-attachments/assets/785b33fd-b4db-4fe9-bf11-ac3d099d8669" width="100"/></td>
+    <td><img src="https://github.com/user-attachments/assets/376b0702-5cb7-4536-90f9-441c74de607e" width="100"/></td>
+  </tr>
+</table>
+
 ## Usage
 
 Enter up to five Algorand public addresses, click the WHEN MOON button and enjoy a nice overview of all assets related to the entered addresses.
