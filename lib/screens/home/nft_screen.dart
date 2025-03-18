@@ -323,7 +323,7 @@ class _NftScreenState extends State<NftScreen> {
                 " " +
                 (data.collection ?? ""),
             images: [...?data.nfts?.map<String>((e) => e.nft?.tpath ?? "")],
-            imageHashes: [...?data.nfts?.map<String>((e) => e.nft?.hash ?? "")],
+            imageHashes: data.nfts?.map((e) => e.nft?.hash).toList() ?? [],
             miniSubTitle: "BETA ",
             subTitle: (_appSettingProvider.currency == Currency.algo
                 ? (data.value ?? 0.0).toStringAsFixed(2)

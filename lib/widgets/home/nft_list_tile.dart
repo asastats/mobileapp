@@ -849,7 +849,8 @@ class NFTHeaderImage extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(5),
         child: CachedNetworkImage(
-          cacheKey: hash == "" ? null : hash,
+          // cacheKey: hash == "" ? null : hash,
+          cacheKey: hash,
           imageUrl: url,
           height: 35,
           width: 35,
