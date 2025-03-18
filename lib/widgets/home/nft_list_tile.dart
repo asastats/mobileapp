@@ -474,6 +474,7 @@ Widget nftStickyHeader(
     required String miniSubTitle,
     required String subTitle,
     required List<String> images,
+    required List<String?> imageHashes,
     required Color borderColor,
     required AppSettingProvider appSettingProvider,
     required ASAModel asaData,
@@ -778,9 +779,10 @@ Widget nftStickyHeader(
                                       : images.length,
                                   itemBuilder: (_, index) {
                                     return NFTHeaderImage(
-                                        hash: hash,
-                                        url: AppConstants.getNFTImage(
-                                            images[index]));
+                                      hash: imageHashes[index],
+                                      url: AppConstants.getNFTImage(
+                                          images[index]),
+                                    );
                                   },
                                 ),
                         ),
@@ -812,12 +814,14 @@ Widget nftStickyHeader(
                                   : 0,
                               shrinkWrap: true,
                               itemBuilder: (_, index) {
+                                final int actualIndex =
+                                    images.length > crossAxisCount
+                                        ? index + crossAxisCount
+                                        : index;
                                 return NFTHeaderImage(
-                                  hash: hash,
-                                  url: AppConstants.getNFTImage(images[
-                                      (images.length > crossAxisCount)
-                                          ? (index + crossAxisCount)
-                                          : index]),
+                                  hash: imageHashes[actualIndex],
+                                  url: AppConstants.getNFTImage(
+                                      images[actualIndex]),
                                 );
                               },
                             ),
@@ -845,7 +849,7 @@ class NFTHeaderImage extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(5),
         child: CachedNetworkImage(
-          cacheKey: hash,
+          cacheKey: hash == "" ? null : hash,
           imageUrl: url,
           height: 35,
           width: 35,

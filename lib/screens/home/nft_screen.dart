@@ -322,9 +322,8 @@ class _NftScreenState extends State<NftScreen> {
             title: AppConstants.removeDecimalZeroFormat(data.amount ?? 0) +
                 " " +
                 (data.collection ?? ""),
-            images: [
-              ...?data.nfts?.map<String>((e) => e.nft?.tpath ?? "").toList()
-            ],
+            images: [...?data.nfts?.map<String>((e) => e.nft?.tpath ?? "")],
+            imageHashes: [...?data.nfts?.map<String>((e) => e.nft?.hash ?? "")],
             miniSubTitle: "BETA ",
             subTitle: (_appSettingProvider.currency == Currency.algo
                 ? (data.value ?? 0.0).toStringAsFixed(2)

@@ -496,6 +496,8 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             images:
                 data.nfts?.map<String>((e) => e.nft?.tpath ?? "").toList() ??
                     [],
+            imageHashes:
+                data.nfts?.map<String>((e) => e.nft?.hash ?? "").toList() ?? [],
             miniSubTitle: "BETA ",
             subTitle: (_appSettingProvider.currency == Currency.algo
                 ? (data.value ?? 0.0).toStringAsFixed(2)
