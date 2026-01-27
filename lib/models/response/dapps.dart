@@ -40,10 +40,10 @@ class Dapps {
   Dapps.fromJson(Map<String, dynamic> json) {
     dapp = json['dapp'];
     value = (json['value'] ?? 0).toDouble();
-    price = json['price'];
+    price = (json['price'] ?? 0).toDouble();
     link = json['link'];
-    available = json['available'];
-    amount = json['amount'];
+    available = (json['available'] ?? 0).toDouble();
+    amount = (json['amount'] ?? 0).toDouble();
     proxy = json['proxy'];
     if (json['distribution'] != null) {
       distribution = <Distribution>[];

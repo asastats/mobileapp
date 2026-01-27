@@ -45,7 +45,7 @@ class Nfts {
   Nfts({this.value, this.id, this.amount, this.nft, this.price, this.creator});
 
   Nfts.fromJson(Map<String, dynamic> json) {
-    value = json['value'];
+    value = (json['value'] ?? 0).toDouble();
     id = json['id'];
     try {
       amount = json['amount'];
@@ -54,7 +54,7 @@ class Nfts {
     }
     // amount = json['amount'];
     nft = json['nft'] != null ? Nft.fromJson(json['nft'] ?? {}) : null;
-    price = json['price'];
+    price = (json['price'] ?? 0).toDouble();
     creator = json['creator'];
   }
 

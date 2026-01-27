@@ -7,7 +7,7 @@ class Transaction {
   Transaction({this.price, this.text, this.link, this.epoch});
 
   Transaction.fromJson(Map<String, dynamic> json) {
-    price = json['price'];
+    price = (json['price'] ?? 0).toDouble();
     text = json['text'];
     link = json['link'];
     epoch = json['epoch'];

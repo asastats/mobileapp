@@ -19,13 +19,13 @@ class Total {
       this.noteval});
 
   Total.fromJson(Map<String, dynamic> json) {
-    algo = json['algo'];
-    asa = json['asa'];
-    nft = json['nft'];
-    total = json['total'];
-    totalusdc = json['totalusdc'];
-    priceusdc = json['priceusdc'];
-    pricealgo = json['pricealgo'];
+    algo = (json['algo'] ?? 0).toDouble();
+    asa = (json['asa'] ?? 0).toDouble();
+    nft = (json['nft'] ?? 0).toDouble();
+    total = (json['total'] ?? 0).toDouble();
+    totalusdc = (json['totalusdc'] ?? 0).toDouble();
+    priceusdc = (json['priceusdc'] ?? 0).toDouble();
+    pricealgo = (json['pricealgo'] ?? 0).toDouble();
     noteval = json['noteval'];
   }
 
