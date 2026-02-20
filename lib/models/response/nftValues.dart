@@ -81,7 +81,7 @@ class Nft {
   Map<String, dynamic>? urls;
   String? path;
   String? tpath;
-  Listed? listed;
+  List<Listed>? listed;
   Transaction? last;
   Transaction? max;
   Transaction? floor;
@@ -119,7 +119,14 @@ class Nft {
     urls = json['urls'] != null ? json['urls'] ?? {} : null;
     path = json['path'];
     tpath = json['tpath'];
-    listed = Listed.fromJson(json['listed'] ?? {});
+    final rawListed = json['listed'];
+    if (rawListed is List) {
+      listed = rawListed.map((e) => Listed.fromJson(e)).toList();
+    } else if (rawListed is Map<String, dynamic> && rawListed.containsKey('price')) {
+      listed = [Listed.fromJson(rawListed)];
+    } else {
+      listed = [];
+    }
     last =
         json['last'] != null ? Transaction.fromJson(json['last'] ?? {}) : null;
     max = json['max'] != null ? Transaction.fromJson(json['max'] ?? {}) : null;
@@ -149,8 +156,8 @@ class Nft {
     }
     data['path'] = path;
     data['tpath'] = tpath;
-    if (listed != null) {
-      data['listed'] = listed!.toJson();
+    if (listed != null && listed!.isNotEmpty) {
+      data['listed'] = listed!.map((e) => e.toJson()).toList();
     }
     if (last != null) {
       data['last'] = last!.toJson();

@@ -150,55 +150,67 @@ class _NFTListTileState extends State<NFTListTile> {
                           label(
                               "${(Provider.of<AppSettingProvider>(context).currency != Currency.algo ? ((nft.price ?? 0) / (widget.model?.total?.priceusdc ?? 1)) : nft.price ?? 0).toStringAsFixed(2)} ${Provider.of<AppSettingProvider>(context).currency.name.toUpperCase()}"),
                           const SizedBox(height: 18),
-                          if (nft.nft?.listed?.text != null)
-                            Wrap(
-                              crossAxisAlignment: WrapCrossAlignment.end,
-                              alignment: WrapAlignment.end,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: RichText(
-                                    maxLines: 2,
-                                    textAlign: TextAlign.right,
-                                    text: TextSpan(
-                                      text: "Listed at ",
-                                      style: TextStyle(
-                                        fontFamily:
-                                            AppConstants.FONT_FAMILY_OUTFIT,
-                                        fontSize: Dimensions.FONT_SIZE_SMALL,
-                                        fontWeight: FontWeight.w600,
-                                        color: ColorResources.themeTextColor(
-                                            context),
-                                      ),
-                                      children: [
-                                        TextSpan(
-                                          text: "${nft.nft?.listed?.text}: ",
-                                          style: const TextStyle(
-                                            fontFamily:
-                                                AppConstants.FONT_FAMILY_OUTFIT,
-                                            fontSize:
-                                                Dimensions.FONT_SIZE_SMALL,
-                                            fontWeight: FontWeight.w600,
-                                            color: ColorResources.primaryColor,
+                          if (nft.nft?.listed != null &&
+                              nft.nft!.listed!.isNotEmpty)
+                            ...nft.nft!.listed!
+                                .where((l) => l.text != null)
+                                .map(
+                                  (listing) => Wrap(
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.end,
+                                    alignment: WrapAlignment.end,
+                                    children: [
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 4),
+                                        child: RichText(
+                                          maxLines: 2,
+                                          textAlign: TextAlign.right,
+                                          text: TextSpan(
+                                            text: "Listed at ",
+                                            style: TextStyle(
+                                              fontFamily: AppConstants
+                                                  .FONT_FAMILY_OUTFIT,
+                                              fontSize:
+                                                  Dimensions.FONT_SIZE_SMALL,
+                                              fontWeight: FontWeight.w600,
+                                              color: ColorResources
+                                                  .themeTextColor(context),
+                                            ),
+                                            children: [
+                                              TextSpan(
+                                                text: "${listing.text}: ",
+                                                style: const TextStyle(
+                                                  fontFamily: AppConstants
+                                                      .FONT_FAMILY_OUTFIT,
+                                                  fontSize: Dimensions
+                                                      .FONT_SIZE_SMALL,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: ColorResources
+                                                      .primaryColor,
+                                                ),
+                                                recognizer:
+                                                    TapGestureRecognizer()
+                                                      ..onTap = () async {
+                                                        await launchURLApp(
+                                                            listing.link ??
+                                                                "");
+                                                      },
+                                              ),
+                                            ],
                                           ),
-                                          recognizer: TapGestureRecognizer()
-                                            ..onTap = () async {
-                                              await launchURLApp(
-                                                  nft.nft?.listed?.link ?? "");
-                                            },
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 8),
+                                        child: containerBox(
+                                            "${(Provider.of<AppSettingProvider>(context).currency != Currency.algo ? ((listing.price ?? 0) / (widget.model?.total?.priceusdc ?? 1)) : listing.price ?? 0).toStringAsFixed(2)} ${Provider.of<AppSettingProvider>(context).currency.name.toUpperCase()}"),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(width: 4),
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: containerBox(
-                                      "${(Provider.of<AppSettingProvider>(context).currency != Currency.algo ? ((nft.nft?.listed?.price ?? 0) / (widget.model?.total?.priceusdc ?? 1)) : nft.nft?.listed?.price ?? 0).toStringAsFixed(2)} ${Provider.of<AppSettingProvider>(context).currency.name.toUpperCase()}"),
-                                ),
-                              ],
-                            ),
                           const SizedBox(height: 2),
                           if (nft.nft?.last?.price != null) ...[
                             transaction(

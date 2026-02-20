@@ -190,9 +190,8 @@ class ASAProvider with ChangeNotifier {
                                 false) ||
                             (element.nft?.urls?.containsElement(searchText) ??
                                 false) ||
-                            (element.nft?.listed
-                                    ?.toJson()
-                                    .containsElement(searchText) ??
+                            (element.nft?.listed?.any((l) =>
+                                    l.toJson().containsElement(searchText)) ??
                                 false) ||
                             (element.nft?.last
                                     ?.toJson()
@@ -236,7 +235,8 @@ class ASAProvider with ChangeNotifier {
                   .contains(searchText) ??
               false) ||
           (element.nft?.urls?.containsElement(searchText) ?? false) ||
-          (element.nft?.listed?.toJson().containsElement(searchText) ??
+          (element.nft?.listed?.any((l) =>
+                  l.toJson().containsElement(searchText)) ??
               false) ||
           (element.nft?.last?.toJson().containsElement(searchText) ?? false) ||
           (element.nft?.max?.toJson().containsElement(searchText) ?? false) ||
