@@ -195,7 +195,7 @@ class _NftScreenState extends State<NftScreen> {
         SliverAppBar(
           automaticallyImplyLeading: false,
           titleSpacing: 0,
-          toolbarHeight: _asaProvider.getPieChartVisibility() ? 220 : 0,
+          toolbarHeight: _asaProvider.getPieChartVisibility() ? 250 : 0,
           title: Column(
             children: [
               if (_asaProvider.getPieChartVisibility()) ...[

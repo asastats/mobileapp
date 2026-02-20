@@ -111,28 +111,31 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
               Expanded(
-                child: TabBarView(
-                  controller: tabController,
-                  children: [
-                    ShowAllScreen(
-                      key: const ValueKey("all"),
-                      type: CategoryType.all,
-                      isSingleAddress: isSingleAddress,
-                      homeScreenState: this,
-                    ),
-                    AsaScreen(
-                      key: const ValueKey("asa"),
-                      type: CategoryType.asa,
-                      isSingleAddress: isSingleAddress,
-                      homeScreenState: this,
-                    ),
-                    NftScreen(
-                      key: const ValueKey("nft"),
-                      type: CategoryType.nft,
-                      isSingleAddress: isSingleAddress,
-                      homeScreenState: this,
-                    ),
-                  ],
+                child: SafeArea(
+                  top: false,
+                  child: TabBarView(
+                    controller: tabController,
+                    children: [
+                      ShowAllScreen(
+                        key: const ValueKey("all"),
+                        type: CategoryType.all,
+                        isSingleAddress: isSingleAddress,
+                        homeScreenState: this,
+                      ),
+                      AsaScreen(
+                        key: const ValueKey("asa"),
+                        type: CategoryType.asa,
+                        isSingleAddress: isSingleAddress,
+                        homeScreenState: this,
+                      ),
+                      NftScreen(
+                        key: const ValueKey("nft"),
+                        type: CategoryType.nft,
+                        isSingleAddress: isSingleAddress,
+                        homeScreenState: this,
+                      ),
+                    ],
+                  ),
                 ),
               )
             ],

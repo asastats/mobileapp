@@ -1,12 +1,18 @@
 import 'dart:async';
+import 'package:asa_stats/config/app_constants.dart';
 import 'package:asa_stats/config/color.dart';
+import 'package:asa_stats/config/dimensions.dart';
 import 'package:asa_stats/config/enums.dart';
 import 'package:asa_stats/models/body/chart_data_model.dart';
+import 'package:asa_stats/data/repository/app_setting_repo.dart';
+import 'package:asa_stats/providers/app_setting_provider.dart';
+import 'package:asa_stats/providers/asa_provider.dart';
 import 'package:asa_stats/utility/toast_service.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
 
 class Chart extends StatefulWidget {
   final List<ChartData> chartData;
@@ -152,7 +158,8 @@ class _ChartState extends State<Chart> {
                       touchResponse.touchedSection != null) {
                     final int touchedIndex =
                         touchResponse.touchedSection!.touchedSectionIndex;
-                    if (touchedIndex < visibleIndexes.length) {
+                    if (touchedIndex >= 0 &&
+                        touchedIndex < visibleIndexes.length) {
                       _lastTouchedIndex = visibleIndexes[touchedIndex];
                     }
                   }
@@ -261,8 +268,69 @@ class _ChartState extends State<Chart> {
     );
   }
 
+  Widget _buildSumLabel(
+      BuildContext context, AppSettingProvider appSettingProvider) {
+    final asaModel = widget.categoryScreenState.asaModel;
+    final priceusdc = asaModel.total?.priceusdc ?? 1.0;
+    final bool isUsd = appSettingProvider.currency == Currency.usd;
+
+    double totalSum = 0;
+    double visibleSum = 0;
+    for (int i = 0; i < widget.chartData.length; i++) {
+      final y = widget.chartData[i].y ?? 0;
+      totalSum += y;
+      if (_isVisible[i]) {
+        visibleSum += y;
+      }
+    }
+
+    double visibleAlgo;
+    if (widget.type == CategoryType.asa) {
+      final base = asaModel.total?.asa ?? 0;
+      visibleAlgo = totalSum > 0 ? (visibleSum / totalSum) * base : 0;
+    } else if (widget.type == CategoryType.nft) {
+      final base = asaModel.total?.nft ?? 0;
+      visibleAlgo = totalSum > 0 ? (visibleSum / totalSum) * base : 0;
+    } else {
+      // Ratio chart has 3 items: ["ALGO", "ASA", "NFT"] as % of full total.
+      // Each item's real ALGO value = (item.y / totalSum) * fullTotal.
+      final fullTotal =
+          (asaModel.total?.total ?? 0) + (asaModel.total?.nft ?? 0);
+      final asaProvider = Provider.of<ASAProvider>(context, listen: false);
+      final excludeNfts = asaProvider.getTotalWithoutNfts();
+
+      double effectiveVisibleSum = 0;
+      for (int i = 0; i < widget.chartData.length; i++) {
+        if (_isVisible[i]) {
+          if (excludeNfts && widget.chartData[i].title == 'NFT') continue;
+          effectiveVisibleSum += widget.chartData[i].y ?? 0;
+        }
+      }
+      visibleAlgo =
+          totalSum > 0 ? (effectiveVisibleSum / totalSum) * fullTotal : 0;
+    }
+
+    final double displayValue = isUsd ? visibleAlgo / priceusdc : visibleAlgo;
+    final String suffix = isUsd ? 'USD' : 'ALGO';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        '${displayValue.toStringAsFixed(2)} $suffix',
+        style: TextStyle(
+          color: ColorResources.themeTextColor(context),
+          fontSize: Dimensions.FONT_SIZE_LARGE_18,
+          fontWeight: FontWeight.w600,
+          fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appSettingProvider = Provider.of<AppSettingProvider>(context);
+
     return LayoutBuilder(builder: (context, constraints) {
       final double containerHeight =
           constraints.hasBoundedHeight ? constraints.maxHeight : 200;
@@ -273,21 +341,32 @@ class _ChartState extends State<Chart> {
       final double spacerWidth = totalWidth * 0.1;
       final double pieChartWidth = totalWidth * 0.6;
 
+      final double rowHeight = containerHeight - 25;
+
       // Compute pie chart radius.
       final double pieChartRadius = (pieChartWidth / 2) * 0.9;
 
       return Padding(
         padding: EdgeInsets.only(top: widget.paddingTop ?? 0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: legendWidth,
-              height: containerHeight,
-              child: _buildLegend(context),
+              height: rowHeight,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: legendWidth,
+                    height: rowHeight,
+                    child: _buildLegend(context),
+                  ),
+                  SizedBox(width: spacerWidth),
+                  _buildPieChart(pieChartWidth, rowHeight, pieChartRadius),
+                ],
+              ),
             ),
-            SizedBox(width: spacerWidth),
-            _buildPieChart(pieChartWidth, containerHeight, pieChartRadius),
+            _buildSumLabel(context, appSettingProvider),
           ],
         ),
       );
