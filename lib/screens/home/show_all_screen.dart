@@ -11,7 +11,9 @@ import 'package:asa_stats/config/hex_color.dart';
 import 'package:asa_stats/data/repository/app_setting_repo.dart';
 import 'package:asa_stats/models/response/asa_model.dart';
 import 'package:asa_stats/models/response/base/response_model.dart';
+import 'package:asa_stats/models/v2/v2.dart' as v2;
 import 'package:asa_stats/providers/app_setting_provider.dart';
+import 'package:asa_stats/screens/chart_helpers.dart';
 import 'package:asa_stats/screens/home/home_screen.dart';
 import 'package:asa_stats/screens/home/widget/message.dart';
 import 'package:asa_stats/screens/web_view/webview_screen.dart';
@@ -74,11 +76,18 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   //timer
   Timer? timer;
 
-  Ratiochart? _ratioChart;
-
   // ASA
   ASAModel asaModel = ASAModel();
   ASAModel originalAsaData = ASAModel();
+
+  // Phase 5c-3 — V2 state. Currently this screen reads top-level account
+  // info (addresses, online, warning, information, total), list counts,
+  // and chart data from ``_accountV2`` directly. Per-row drill data
+  // (values[i], nftValues[i], notEval[i] passed into AsaListTile /
+  // NftListTile / NotEvalListTile) still comes from ``asaModel`` because
+  // those widgets haven't been migrated yet (Phases 5c-4 / 5c-5). The
+  // dual-population shim in ASAProvider keeps both in sync.
+  v2.EvaluatedAccount accountV2 = v2.EvaluatedAccount();
 
   //provider
   late ASAProvider _asaProvider;
@@ -99,17 +108,22 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       appbarH = MediaQuery.of(context).padding.top;
       _appSettingProvider = Provider.of<AppSettingProvider>(context);
       _asaProvider = Provider.of<ASAProvider>(context, listen: false);
-      if ((_asaProvider.asaModel.values != null &&
-          _asaProvider.asaModel.nftValues != null &&
-          _asaProvider.asaModel.notEval != null)) {
+      // Phase 5c-3 — data-presence check uses V2 state. ``accountV2`` is
+      // never null (provider initializes it to ``EvaluatedAccount()`` —
+      // empty lists for asaitems/nftcollections/notevals), so we check
+      // for non-empty content rather than null. ``preCacheImages`` still
+      // takes the V1 NftValues list; the shim keeps that populated.
+      if (_asaProvider.accountV2.asaitems.isNotEmpty ||
+          _asaProvider.accountV2.nftcollections.isNotEmpty ||
+          _asaProvider.accountV2.notevals.isNotEmpty) {
         preCacheImages(_asaProvider.asaModel.nftValues ?? []);
         await updateASAdata();
         autoRefresh();
       }
       if (_asaProvider.isAddressSaved() &&
-          (asaModel.values == null &&
-              asaModel.nftValues == null &&
-              asaModel.notEval == null)) {
+          _asaProvider.accountV2.asaitems.isEmpty &&
+          _asaProvider.accountV2.nftcollections.isEmpty &&
+          _asaProvider.accountV2.notevals.isEmpty) {
         _asaProvider.address = _asaProvider.getAddress().first;
         showEasyLoader(true);
         // Phase 5c — address lookup + account fetch migrated to V2.
@@ -173,10 +187,15 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       slivers: [
         SliverAppBar(
           automaticallyImplyLeading: false,
-          toolbarHeight: (((asaModel.addresses?.length ?? 0) > 4) ? 35 : 20) +
-              (widget.type == CategoryType.nft ? 50 : 100) +
-              (asaModel.warning != null ? 40 : 0) +
-              (asaModel.information != null ? 40 : 0),
+          // Phase 5c-3 — top-level account info now sourced from
+          // accountV2 directly. The shim keeps asaModel populated in
+          // parallel so child list-tile widgets (which still consume
+          // v1 types) keep rendering until 5c-4 / 5c-5.
+          toolbarHeight:
+              (((accountV2.accountInfo?.addresses.length ?? 0) > 4) ? 35 : 20) +
+                  (widget.type == CategoryType.nft ? 50 : 100) +
+                  (accountV2.systemInfo?.warning != null ? 40 : 0) +
+                  (accountV2.systemInfo?.information != null ? 40 : 0),
           titleSpacing: 0,
           title: SizedBox(
             width: double.maxFinite,
@@ -192,35 +211,36 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                 const SizedBox(height: 5),
                 Wrap(
                   children: [
-                    ...asaModel.addresses?.map((element) {
-                          String val = "";
-                          val +=
-                              (" ${element.firstChars(5)}...${element.lastChars(5)}");
-                          return GestureDetector(
-                            onTap: () async {
-                              onAddressTap(element);
-                            },
-                            child: Text(
-                              val,
-                              style: const TextStyle(
-                                color: ColorResources.primaryColor,
-                                fontSize: Dimensions.FONT_SIZE_LARGE,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          );
-                        }).toList() ??
-                        [],
+                    ...(accountV2.accountInfo?.addresses ?? const [])
+                        .map((element) {
+                      String val = "";
+                      val +=
+                          (" ${element.firstChars(5)}...${element.lastChars(5)}");
+                      return GestureDetector(
+                        onTap: () async {
+                          onAddressTap(element);
+                        },
+                        child: Text(
+                          val,
+                          style: const TextStyle(
+                            color: ColorResources.primaryColor,
+                            fontSize: Dimensions.FONT_SIZE_LARGE,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }),
                   ],
                 ),
                 const SizedBox(height: 8),
                 AddressActionRow(
-                    isSingle: asaModel.addresses?.length == 1,
-                    status: asaModel.online ?? false,
+                    isSingle:
+                        (accountV2.accountInfo?.addresses.length ?? 0) == 1,
+                    status: accountV2.accountInfo?.online ?? false,
                     exportUrl: getSingleAddressForTax(_asaProvider.address)),
-                if (asaModel.warning != null)
+                if (accountV2.systemInfo?.warning != null)
                   const Message(type: messageType.message),
-                if (asaModel.information != null)
+                if (accountV2.systemInfo?.information != null)
                   const Message(type: messageType.info),
               ],
             ),
@@ -240,21 +260,26 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           ),
         ),
         if (widget.type == CategoryType.all)
-          emptyMsg(((asaModel.nftValues?.isEmpty ?? false) &&
-              (asaModel.values?.isEmpty ?? false))),
+          emptyMsg(accountV2.nftcollections.isEmpty &&
+              accountV2.asaitems.isEmpty),
 
         //? ASA
         if (widget.type == CategoryType.all ||
             widget.type == CategoryType.asa) ...[
           if (widget.type == CategoryType.asa)
-            emptyMsg((asaModel.values?.isEmpty ?? false)),
-          ..._sliverAsaList(asaModel.values?.length ?? 0),
+            emptyMsg(accountV2.asaitems.isEmpty),
+          // Per-row drill (asaModel.values[i] passed into list tiles)
+          // stays on V1 until Phase 5c-4 migrates the tile widgets;
+          // ``asaModel.values?.length`` is equivalent to
+          // ``accountV2.asaitems.length`` via the shim. Using the V2
+          // count keeps the read surface consistent.
+          ..._sliverAsaList(accountV2.asaitems.length),
         ],
 
         //? NFT
         ...[
           if (widget.type == CategoryType.all &&
-              (asaModel.nftValues?.isNotEmpty ?? false))
+              accountV2.nftcollections.isNotEmpty)
             SliverAppBar(
               toolbarHeight: 43,
               leadingWidth: 0,
@@ -269,14 +294,14 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           if (widget.type == CategoryType.nft ||
               widget.type == CategoryType.all) ...[
             if (widget.type == CategoryType.nft)
-              emptyMsg((asaModel.nftValues?.isEmpty ?? false)),
-            ..._sliverNFTList(asaModel.nftValues?.length ?? 0),
+              emptyMsg(accountV2.nftcollections.isEmpty),
+            ..._sliverNFTList(accountV2.nftcollections.length),
           ],
         ],
 
         //? Not Eval
         if (widget.type == CategoryType.all &&
-            (asaModel.notEval?.isNotEmpty ?? false)) ...[
+            accountV2.notevals.isNotEmpty) ...[
           SliverAppBar(
             toolbarHeight: 43,
             leadingWidth: 0,
@@ -288,7 +313,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
               color: ColorResources.borderColor,
             ),
           ),
-          ..._sliverNotEvalList(asaModel.notEval?.length ?? 0),
+          ..._sliverNotEvalList(accountV2.notevals.length),
         ],
         SliverAppBar(
           automaticallyImplyLeading: false,
@@ -383,19 +408,18 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
 
   List<Widget> _sliverAsaList(int size) {
     var widgetList = <Widget>[];
+    // Compute the max asaitem value from V2 directly. Returns 0.0 when
+    // the list is empty (matches V1's `?? 0.0` fallback chain).
+    final values = accountV2.asaitems
+        .map((i) => i.value ?? 0.0)
+        .toList(growable: false);
     final max =
-        (asaModel.values?.map((e) => e.value).toList().isNotEmpty ?? false)
-            ? (asaModel.values
-                    ?.map((e) => e.value)
-                    .toList()
-                    .reduce((curr, next) => (curr! > next! ? curr : next)) ??
-                0.0)
-            : 0.0;
+        values.isEmpty ? 0.0 : values.reduce((a, b) => a > b ? a : b);
     final maxl =
         (Provider.of<AppSettingProvider>(context).currency == Currency.algo
                 ? AppConstants.formateNumber(max, points: "00")
                 : AppConstants.formateNumber(
-                    ((max) / (asaModel.total?.priceusdc ?? 1)),
+                    ((max) / (accountV2.total?.priceusdc ?? 1)),
                     points: "00"))
             .length;
     for (int index = 0; index < size; index++) {
@@ -505,7 +529,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             miniSubTitle: "BETA ",
             subTitle: (_appSettingProvider.currency == Currency.algo
                 ? (data.value ?? 0.0).toStringAsFixed(2)
-                : ((data.value ?? 0) / (asaModel.total?.priceusdc ?? 1))
+                : ((data.value ?? 0) / (accountV2.total?.priceusdc ?? 1))
                     .toStringAsFixed(2)),
             onTap: () {
               double nHeight = 0;
@@ -536,7 +560,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
               }
               onListItemTap(
                   ((widget.type == CategoryType.all
-                              ? ((asaModel.values?.length ?? 0) + 0.76)
+                              ? (accountV2.asaitems.length + 0.76)
                               : 0) +
                           index)
                       .toDouble(),
@@ -578,7 +602,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
     widgetList.add(SliverAppBar(
       title: NotEvalListTile(
         isExpanded: (asaId == "not evaluated"),
-        title: "${asaModel.notEval?.length ?? 0} not evaluated",
+        title: "${accountV2.notevals.length} not evaluated",
         onExpand: () {
           if (_asaProvider.isCaching) return;
           double nHeight = 0;
@@ -590,7 +614,9 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           //List height count
           int crossAxisCount = countCrossAxisNFT(context);
           setState(() {});
-          for (int i = 0; i < (asaModel.nftValues?.length ?? 0); i++) {
+          // Per-item drill below (NftValues data + .nfts.map) stays on
+          // V1 until 5c-5; the loop bound now uses V2.
+          for (int i = 0; i < accountV2.nftcollections.length; i++) {
             NftValues data = asaModel.nftValues?[i] ?? NftValues();
             var length = (data.nfts
                         ?.map<String>(
@@ -607,8 +633,9 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             nHeight += height;
           }
           onListItemTap(
-              (asaModel.values?.length ?? 0) +
-                  (asaModel.nftValues?.length ?? 0).toDouble(),
+              (accountV2.asaitems.length +
+                      accountV2.nftcollections.length)
+                  .toDouble(),
               animate: asaId.isNotEmpty,
               nHeight: nHeight);
         },
@@ -656,25 +683,23 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
     asaResponse = _asaProvider.getResponse();
     if (widget.isSingleAddress) {
       asaModel = _asaProvider.asaModelSingle.copyWith();
+      accountV2 = _asaProvider.accountV2Single ?? v2.EvaluatedAccount();
     } else {
       asaModel = _asaProvider.asaModel.copyWith();
+      accountV2 = _asaProvider.accountV2;
     }
     chartData.clear();
     originalAsaData = asaModel.copyWith();
-    _ratioChart = widget.type == CategoryType.all
-        ? asaModel.ratioChart
-        : widget.type == CategoryType.asa
-            ? asaModel.asaChart
-            : asaModel.nftChart;
-    for (var i = 0; i < (_ratioChart?.labels?.length ?? 0); i++) {
-      chartData.insert(
-          i,
-          ChartData(
-              color: HexColor(
-                  (_ratioChart?.datasets?[0].backgroundColor?[i] ?? "")),
-              title: (_ratioChart?.labels?[i] ?? ""),
-              y: double.parse(_ratioChart?.datasets?[0].data?[i] ?? "")));
-    }
+
+    // Phase 5c-3 / B8 — chart data is now computed inline from the V2
+    // model instead of read from the pre-built ``asaModel.ratioChart`` /
+    // ``asaChart`` / ``nftChart`` (the shim leaves those null per design).
+    // For ``CategoryType.all`` this is the 3-segment ALGO/ASA/NFT pie
+    // matching the v1 backend's _ratio_chart_data() output. The two
+    // other branches stay null-safe so unmigrated tabs that instantiate
+    // this widget with a different type don't crash — Phase 5c-4 / 5c-5
+    // will rewrite the asa/nft per-item charts in their own screens.
+    chartData.addAll(buildRatioChartData(accountV2, widget.type));
 
     asaColors = await AppConstants.readGlobalJsonFile(context);
     if (_searchController.text.isNotEmpty) {
@@ -689,9 +714,9 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
         nHeight +
         100 +
         ((index.toInt() == 0) ? 7 : (index * 54)) +
-        (((asaModel.addresses?.length ?? 0) > 4) ? 35 : 0) +
-        (asaModel.warning != null ? 40 : 0) +
-        (asaModel.information != null ? 40 : 0);
+        (((accountV2.accountInfo?.addresses.length ?? 0) > 4) ? 35 : 0) +
+        (accountV2.systemInfo?.warning != null ? 40 : 0) +
+        (accountV2.systemInfo?.information != null ? 40 : 0);
     if (animate) {
       if (controller.position.maxScrollExtent > 0) {
         controller.animateTo(
@@ -779,7 +804,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   }
 
   void onAddressTap(element) async {
-    if ((asaModel.addresses?.length ?? 0) == 1) {
+    if ((accountV2.accountInfo?.addresses.length ?? 0) == 1) {
       String url = 'https://allo.info/account/$element';
       await launchURLApp(url);
       return;
@@ -814,7 +839,10 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       asaProviderDotAddress = _asaProvider.singleAddress;
     }
 
-    return ('${AppConstants.TAX_URL}${(asaModel.addresses?.length == 1) ? asaModel.addresses![0] : _asaProvider.bundleHash}');
+    final addresses = accountV2.accountInfo?.addresses ?? const <String>[];
+    final addrPart =
+        addresses.length == 1 ? addresses[0] : _asaProvider.bundleHash;
+    return ('${AppConstants.TAX_URL}$addrPart');
   }
 
   Future onRefresh() async {
