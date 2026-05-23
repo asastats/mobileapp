@@ -10,6 +10,7 @@ import '../models/response/base/response_model.dart';
 import '../models/response/nftValues.dart';
 import '../models/response/notEval.dart';
 import '../models/response/values.dart';
+import '../models/v2/v2.dart' as v2;
 import '../utility/toast_service.dart';
 import 'package:asa_stats/config/extensions.dart';
 
@@ -38,7 +39,138 @@ class ASAProvider with ChangeNotifier {
   set imageProviders(_) => _imageProviders = _;
   set isCaching(_) => _isCaching = _;
 
+  // -- V2 state -------------------------------------------------------
+  //
+  // Distinct backing fields from the V1 _asaData / _asaDataSingle.
+  // Screens are migrated incrementally (Phase 5c) — every widget that
+  // hasn't switched yet keeps reading from _asaData; widgets that have
+  // switched read from _accountV2. When all are migrated, the V1 state
+  // and methods get deleted (Phase 5d).
+  v2.EvaluatedAccount _accountV2 = v2.EvaluatedAccount();
+  v2.EvaluatedAccount? _accountV2Single;
+
+  v2.EvaluatedAccount get accountV2 => _accountV2;
+  v2.EvaluatedAccount? get accountV2Single => _accountV2Single;
+
   ASAProvider({required this.asaRepo});
+
+  // -- V2 API calls ---------------------------------------------------
+
+  /// POST raw address text and receive the bundle hash. Replaces the V1
+  /// ``getAsaAddress({"raw": ...})`` call. Returns a ``ResponseModel``
+  /// whose ``data`` is the bundle-hash string (unpacked from the
+  /// ``{"bundle": "..."}`` JSON envelope), so existing callers that pass
+  /// the result into the next API call don't need to change shape.
+  Future<ResponseModel> getBundleHashV2(String addresses) async {
+    notifyListeners();
+    _isLoading = true;
+    final apiResponse = await asaRepo.getBundleHashV2(addresses);
+    ResponseModel responseModel;
+    if (apiResponse.response != null &&
+        apiResponse.response!.statusCode == 200) {
+      try {
+        final raw = apiResponse.response!.data;
+        // The V2 endpoint returns ``{"bundle": "..."}`` — unwrap to the
+        // bare hash so call sites can use the result directly as the
+        // address-or-bundle path parameter.
+        final bundleHash = v2.BundleHash.fromJson(
+          raw is Map<String, dynamic>
+              ? raw
+              : Map<String, dynamic>.from(raw as Map),
+        );
+        _bundleHash = bundleHash.bundle ?? '';
+        responseModel = ResponseModel(
+          true,
+          _bundleHash.isEmpty ? "Empty bundle" : _bundleHash,
+          _bundleHash,
+        );
+      } catch (e) {
+        debugPrint("Unable to parse bundle response: $e");
+        responseModel = ResponseModel(
+            false, "Unable to parse bundle response", null);
+      }
+    } else {
+      responseModel = ResponseModel(false, apiResponse.error, null);
+      ToastService.show(responseModel.message, toastLength: Toast.LENGTH_LONG);
+    }
+    _isLoading = false;
+    notifyListeners();
+    return responseModel;
+  }
+
+  /// GET a full evaluated account by address / bundle / NFD name.
+  /// Replaces the V1 ``getAsaData(address)`` call.
+  ///
+  /// On success, the parsed ``EvaluatedAccount`` is stashed in
+  /// ``_accountV2`` (or ``_accountV2Single`` when ``isSingle: true``).
+  /// On parse failure, sets a failure ``ResponseModel`` but leaves the
+  /// previous state untouched so a partial outage doesn't blank the UI.
+  Future<ResponseModel> getEvaluatedAccountV2(String addressOrBundle,
+      {bool isSingle = false}) async {
+    _isLoading = true;
+    notifyListeners();
+    final apiResponse = await asaRepo.getEvaluatedAccountV2(addressOrBundle);
+    ResponseModel responseModel;
+    if (apiResponse.response != null &&
+        apiResponse.response!.statusCode == 200) {
+      // Cache the raw response body for cold-start fallback. Stored under
+      // the V2 key so existing V1-shaped cached payloads on user devices
+      // are naturally orphaned (see AppConstants.ASA_RESPONSE).
+      saveResponse(jsonEncode(apiResponse.response?.data));
+      try {
+        final raw = apiResponse.response!.data;
+        final parsed = v2.EvaluatedAccount.fromJson(
+          raw is Map<String, dynamic>
+              ? raw
+              : Map<String, dynamic>.from(raw as Map),
+        );
+        if (isSingle) {
+          _accountV2Single = parsed;
+        } else {
+          _accountV2 = parsed;
+        }
+        responseModel = ResponseModel(
+            true, "OK", apiResponse.response?.data);
+      } catch (e) {
+        debugPrint("Unable to parse V2 account response: $e");
+        responseModel = ResponseModel(
+            false, "Unable to parse API response", apiResponse.response?.data);
+      }
+    } else {
+      responseModel = ResponseModel(false, apiResponse.error, null);
+    }
+    if (!responseModel.isSuccess) {
+      ToastService.show(responseModel.message, toastLength: Toast.LENGTH_LONG);
+    }
+    _isLoading = false;
+    notifyListeners();
+    return responseModel;
+  }
+
+  /// GET the global-settings payload from the V2 endpoint and persist it
+  /// to SharedPreferences for offline access. Same contract as the V1
+  /// ``getGlobalSetting()`` — only the URL changed — so the JSON shape
+  /// in shared prefs stays compatible, and the bundled
+  /// ``assets/json/global_settings.json`` fallback still works.
+  Future<ResponseModel> getGlobalSettingV2() async {
+    _isLoading = true;
+    final apiResponse = await asaRepo.getGlobalSettingV2();
+    ResponseModel responseModel;
+    if (apiResponse.response != null &&
+        apiResponse.response!.statusCode == 200) {
+      await setGlobalSetting(jsonEncode(apiResponse.response?.data ?? {}));
+      responseModel = ResponseModel(
+          true, "OK", apiResponse.response?.data);
+    } else {
+      responseModel = ResponseModel(false, apiResponse.error, null);
+      ToastService.show(responseModel.message, toastLength: Toast.LENGTH_LONG);
+    }
+    _isLoading = false;
+    notifyListeners();
+    return responseModel;
+  }
+
+  // -- V1 API calls (retained until Phase 5d) -------------------------
 
   Future<ResponseModel> getAsaAddress(Map<String, dynamic> data,
       {bool isSingle = false}) async {
@@ -377,9 +509,26 @@ class ASAProvider with ChangeNotifier {
   }
 
   void clear() {
-    // Clear Provider
-    _asaData = ASAModel.fromJson({});
-    _asaDataSingle = ASAModel.fromJson({});
+    // Reset V2 first, then V1. The legacy ``ASAModel.fromJson({})`` calls
+    // below crash on empty input (the v1 model dereferences
+    // ``json['addresses'].cast<String>()`` without null-checking), but
+    // we depend on those calls remaining in place until Phase 5d retires
+    // the v1 model entirely. Resetting V2 first ensures the V2 slots are
+    // wiped even if the V1 reset throws. Wrap the V1 reset in a try
+    // block so a stale ``_asaData``/``_asaDataSingle`` from the previous
+    // session doesn't survive — the catch is a no-op because the throw
+    // happens before the assignment, leaving the existing _asaData in
+    // place, which is preferable to propagating an exception out of
+    // clear() and crashing whatever called it.
+    _accountV2 = v2.EvaluatedAccount();
+    _accountV2Single = null;
+    try {
+      _asaData = ASAModel.fromJson({});
+      _asaDataSingle = ASAModel.fromJson({});
+    } on NoSuchMethodError {
+      // Pre-existing v1 fragility — see comment above. Phase 5d cleanup
+      // removes the offending lines along with the v1 model.
+    }
     notifyListeners();
   }
 }

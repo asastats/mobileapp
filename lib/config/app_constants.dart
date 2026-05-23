@@ -39,7 +39,12 @@ class AppConstants {
 
   static const String THEME = 'theme';
   static const String ADDRESS = 'address';
-  static const String ASA_RESPONSE = 'ASA_RESPONSE';
+  // V1 ``ASA_RESPONSE`` (the legacy key) is intentionally not used by any
+  // V2 code path. Bumping to ``_V2`` orphans the previous cache entry on
+  // existing user devices, forcing a fresh fetch on first launch after
+  // the V2 migration ships. Cleaner than detecting the cached payload's
+  // shape at runtime.
+  static const String ASA_RESPONSE = 'ASA_RESPONSE_V2';
   static const String AUTO_REFRESH = 'auto_refresh';
   static const String PIE_CHART_VISIBILITY = 'PIE_CHART_VISIBILITY';
   static const String TOTAL_WITHOUT_NFTS = 'TOTAL_WITHOUT_NFTS';
