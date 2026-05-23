@@ -29,7 +29,11 @@ class _SplashScreenState extends State<SplashScreen> {
     super.didChangeDependencies();
     if (_isInit) {
       _asaProvider = Provider.of<ASAProvider>(context);
-      await _asaProvider.getGlobalSetting();
+      // Phase 5c — settings endpoint migrated to v2 (``/api/v2/settings/``).
+      // The payload shape is identical to v1, so the SharedPreferences key
+      // (``AppConstants.GLOBAL_SETTING``) is unchanged and every downstream
+      // reader of the persisted settings keeps working without changes.
+      await _asaProvider.getGlobalSettingV2();
       Timer.periodic(const Duration(seconds: 3), (timer) {
         timer.cancel();
         Navigator.pushReplacementNamed(context, RouteList.MENU);
