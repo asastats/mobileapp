@@ -112,10 +112,15 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
               asaModel.notEval == null)) {
         _asaProvider.address = _asaProvider.getAddress().first;
         showEasyLoader(true);
+        // Phase 5c — address lookup + account fetch migrated to V2.
+        // The provider dual-populates V1 state via the v2ToV1ASAModel
+        // shim, so this screen's existing references to ``asaModel``
+        // (built from ``_asaData``) keep working until the screen
+        // itself migrates to read ``accountV2`` in a later sub-phase.
         ResponseModel response = await _asaProvider
-            .getAsaAddress({"raw": _asaProvider.getAddress().first});
+            .getBundleHashV2(_asaProvider.getAddress().first);
         ResponseModel responseData =
-            await _asaProvider.getAsaData(response.data);
+            await _asaProvider.getEvaluatedAccountV2(response.data);
         showEasyLoader(_asaProvider.isLoading);
         if (responseData.isSuccess) {
           preCacheImages(_asaProvider.asaModel.nftValues ?? []);
@@ -730,13 +735,13 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
         ToastService.cancel();
         return t.cancel(); // Cancel time if user disable it
       }
-      ResponseModel responseAddress = await _asaProvider.getAsaAddress({
-        "raw": widget.isSingleAddress
+      ResponseModel responseAddress = await _asaProvider.getBundleHashV2(
+        widget.isSingleAddress
             ? _asaProvider.singleAddress.toString()
-            : _asaProvider.address.toString()
-      });
+            : _asaProvider.address.toString(),
+      );
       if (responseAddress.isSuccess) {
-        await _asaProvider.getAsaData(responseAddress.data,
+        await _asaProvider.getEvaluatedAccountV2(responseAddress.data,
             isSingle: widget.isSingleAddress);
         updateASAdata();
       }
@@ -782,7 +787,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
     showEasyLoader(true);
     _asaProvider.singleAddress = element;
     ResponseModel response =
-        await _asaProvider.getAsaData(element, isSingle: true);
+        await _asaProvider.getEvaluatedAccountV2(element, isSingle: true);
     showEasyLoader(_asaProvider.isLoading);
     if (response.isSuccess) {
       await Navigator.push(
@@ -813,18 +818,25 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   }
 
   Future onRefresh() async {
-    Map<String, dynamic> data = {
-      "raw": widget.isSingleAddress
-          ? _asaProvider.singleAddress.toString()
-          : _asaProvider.address.toString()
-    };
-    ResponseModel responseAddress = await _asaProvider.getAsaAddress(data,
-        isSingle: widget.isSingleAddress);
+    final lookupAddress = widget.isSingleAddress
+        ? _asaProvider.singleAddress.toString()
+        : _asaProvider.address.toString();
+    // Note: V1 ``getAsaAddress`` had an ``isSingle`` parameter that the
+    // V1 implementation actually ignored; V2 ``getBundleHashV2`` doesn't
+    // take it (the bundle hash is identical regardless). The flag is
+    // only meaningful on the account-fetch step.
+    ResponseModel responseAddress =
+        await _asaProvider.getBundleHashV2(lookupAddress);
     if (responseAddress.isSuccess) {
-      ResponseModel responseData = await _asaProvider
-          .getAsaData(responseAddress.data, isSingle: widget.isSingleAddress);
+      ResponseModel responseData = await _asaProvider.getEvaluatedAccountV2(
+          responseAddress.data,
+          isSingle: widget.isSingleAddress);
       if (responseData.isSuccess) {
-        await _asaProvider.getAsaData(responseAddress.data,
+        // Pre-existing V1 quirk: the original called getAsaData twice
+        // here for unclear reasons. Preserved bit-for-bit to avoid
+        // introducing behavior changes in this transition; the
+        // duplicate fetch is a Phase 5d / general-cleanup candidate.
+        await _asaProvider.getEvaluatedAccountV2(responseAddress.data,
             isSingle: widget.isSingleAddress);
         await updateASAdata();
       }

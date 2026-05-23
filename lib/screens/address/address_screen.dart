@@ -214,24 +214,33 @@ class _AddressScreenState extends State<AddressScreen> {
     showEasyLoader(true);
 
     await _asaProvider.saveAddress(_asaProvider.address);
-    ResponseModel responseAddress = await _asaProvider
-        .getAsaAddress({"raw": _asaProvider.address.toString()});
+    // Phase 5c — address lookup migrated to V2. The V2 contract is
+    // ``POST /api/v2/`` with ``{"addresses": "..."}`` (the provider's
+    // ``getBundleHashV2`` wraps that for us; here we pass the raw value).
+    // On success the provider unwraps the ``{"bundle": "..."}`` response
+    // envelope to a bare hash string, then we feed that to
+    // ``getEvaluatedAccountV2`` for the account fetch. The provider's
+    // V2 fetch dual-populates ``_accountV2`` and ``_asaData`` via the
+    // ``v2ToV1ASAModel`` shim, so unmigrated tab screens that still
+    // read from ``asaModel`` continue to render correctly.
+    ResponseModel responseAddress =
+        await _asaProvider.getBundleHashV2(_asaProvider.address.toString());
     showEasyLoader(_asaProvider.isLoading);
+    // ``Multiple:`` is a V1 backend-specific signal for "address belongs
+    // to multiple bundles". V2 does not produce this message today, so
+    // the branch below is effectively a no-op under V2; keep it in
+    // place in case V2 ever grows a similar signal.
     if (responseAddress.message.startsWith("Multiple:")) {
       isMultipleAlgo = true;
       setState(() {});
     } else {
       if (responseAddress.isSuccess) {
         ResponseModel response =
-            await _asaProvider.getAsaData(responseAddress.data);
+            await _asaProvider.getEvaluatedAccountV2(responseAddress.data);
         isMultipleAlgo = false;
         if (response.isSuccess) {
           _menuProvider.setIndex(9);
         }
-        // var result = await Navigator.pushNamed(context, RouteList.HOME_SCREEN,arguments: {"isSingleAddress":false});
-        // if (result == true) {
-        //   setState(() {});
-        // }
       } else {
         setState(() {});
       }

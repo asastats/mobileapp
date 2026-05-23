@@ -471,8 +471,9 @@ class _NftScreenState extends State<NftScreen> {
     }
     showEasyLoader(true);
     _asaProvider.singleAddress = element;
+    // Phase 5c — V2 fetch via dual-population shim.
     ResponseModel response =
-        await _asaProvider.getAsaData(element, isSingle: true);
+        await _asaProvider.getEvaluatedAccountV2(element, isSingle: true);
     showEasyLoader(_asaProvider.isLoading);
     if (response.isSuccess) {
       await Navigator.push(
@@ -489,18 +490,19 @@ class _NftScreenState extends State<NftScreen> {
   }
 
   Future onRefresh() async {
-    Map<String, dynamic> data = {
-      "raw": widget.isSingleAddress
-          ? _asaProvider.singleAddress.toString()
-          : _asaProvider.address.toString()
-    };
-    ResponseModel responseAddress = await _asaProvider.getAsaAddress(data,
-        isSingle: widget.isSingleAddress);
+    final lookupAddress = widget.isSingleAddress
+        ? _asaProvider.singleAddress.toString()
+        : _asaProvider.address.toString();
+    // See note in show_all_screen.dart onRefresh re: duplicate fetch
+    // (preserved pre-existing V1 behavior).
+    ResponseModel responseAddress =
+        await _asaProvider.getBundleHashV2(lookupAddress);
     if (responseAddress.isSuccess) {
-      ResponseModel responseData = await _asaProvider
-          .getAsaData(responseAddress.data, isSingle: widget.isSingleAddress);
+      ResponseModel responseData = await _asaProvider.getEvaluatedAccountV2(
+          responseAddress.data,
+          isSingle: widget.isSingleAddress);
       if (responseData.isSuccess) {
-        await _asaProvider.getAsaData(responseAddress.data,
+        await _asaProvider.getEvaluatedAccountV2(responseAddress.data,
             isSingle: widget.isSingleAddress);
         await updateASAdata();
       }

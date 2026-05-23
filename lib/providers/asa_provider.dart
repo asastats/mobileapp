@@ -11,6 +11,7 @@ import '../models/response/nftValues.dart';
 import '../models/response/notEval.dart';
 import '../models/response/values.dart';
 import '../models/v2/v2.dart' as v2;
+import '../models/v2_to_v1.dart';
 import '../utility/toast_service.dart';
 import 'package:asa_stats/config/extensions.dart';
 
@@ -105,6 +106,12 @@ class ASAProvider with ChangeNotifier {
   /// ``_accountV2`` (or ``_accountV2Single`` when ``isSingle: true``).
   /// On parse failure, sets a failure ``ResponseModel`` but leaves the
   /// previous state untouched so a partial outage doesn't blank the UI.
+  ///
+  /// During the Phase 5c transition, ``_asaData`` / ``_asaDataSingle``
+  /// are ALSO populated via the ``v2ToV1ASAModel`` shim so screens that
+  /// haven't been migrated to read V2 directly keep working. Once every
+  /// screen reads from ``_accountV2``, Phase 5d removes the dual write
+  /// and the shim file.
   Future<ResponseModel> getEvaluatedAccountV2(String addressOrBundle,
       {bool isSingle = false}) async {
     _isLoading = true;
@@ -124,10 +131,16 @@ class ASAProvider with ChangeNotifier {
               ? raw
               : Map<String, dynamic>.from(raw as Map),
         );
+        // Build the V1 shape from the same parsed V2 model. The shim is
+        // a pure function — if it ever throws the V2 state is still
+        // written below, so the V2-reading screens stay correct.
+        final v1Shim = v2ToV1ASAModel(parsed);
         if (isSingle) {
           _accountV2Single = parsed;
+          _asaDataSingle = v1Shim;
         } else {
           _accountV2 = parsed;
+          _asaData = v1Shim;
         }
         responseModel = ResponseModel(
             true, "OK", apiResponse.response?.data);
