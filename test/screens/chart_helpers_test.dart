@@ -122,4 +122,154 @@ void main() {
       expect(data.every((d) => d.y == 0.0), isTrue);
     });
   });
+
+  group('buildAsaChartData against the real sample payload', () {
+    late v2.EvaluatedAccount realAccount;
+    // Use a palette of 18 slots like the bundled JSON, with synthetic
+    // colors so the test assertions are deterministic regardless of
+    // what the production palette becomes.
+    final palette = <String, dynamic>{
+      for (var i = 0; i < 18; i++)
+        i.toString(): '#${(0x100000 + i * 0x010101).toRadixString(16).padLeft(6, '0')}',
+    };
+
+    setUpAll(() {
+      final raw = jsonDecode(
+        File('test/fixtures/sample_serialized_540A5.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
+      realAccount = v2.EvaluatedAccount.fromJson(raw);
+    });
+
+    test('produces 16 segments for the 76-asaitem fixture', () {
+      // 15 real items + "others" bucket — the website's
+      // PIE_CHART_MAXIMUM_ITEMS=15 limit kicks in well before the
+      // hide-last-percent threshold for this account.
+      final data = buildAsaChartData(realAccount, palette);
+      expect(data, hasLength(16));
+    });
+
+    test('percentages sum to ~100', () {
+      final data = buildAsaChartData(realAccount, palette);
+      final sum = data.fold<double>(0, (s, d) => s + (d.y ?? 0));
+      expect(sum, closeTo(100.0, 0.0001));
+    });
+
+    test('last segment is the "others" bucket', () {
+      final data = buildAsaChartData(realAccount, palette);
+      expect(data.last.title, 'others');
+    });
+
+    test('segments before "others" are in descending order by y-value', () {
+      final data = buildAsaChartData(realAccount, palette);
+      final real = data.sublist(0, data.length - 1); // drop "others"
+      for (var i = 1; i < real.length; i++) {
+        expect(real[i].y, lessThanOrEqualTo(real[i - 1].y ?? double.infinity),
+            reason: 'segment $i (${real[i].title}) > previous '
+                '(${real[i - 1].title}) — backend should return '
+                'asaitems sorted descending');
+      }
+    });
+  });
+
+  group('buildAsaChartData boundary cases', () {
+    final palette = <String, dynamic>{
+      '0': '#ff0000',
+      '1': '#00ff00',
+      '2': '#0000ff',
+    };
+
+    test('empty account returns empty list', () {
+      expect(buildAsaChartData(v2.EvaluatedAccount(), palette), isEmpty);
+    });
+
+    test('account with only zero-value items returns empty list', () {
+      final account = v2.EvaluatedAccount(asaitems: [
+        v2.AsaItem(asset: v2.Asa(id: 1, unit: 'A'), value: 0, amount: 0),
+        v2.AsaItem(asset: v2.Asa(id: 2, unit: 'B'), value: 0, amount: 0),
+      ]);
+      expect(buildAsaChartData(account, palette), isEmpty);
+    });
+
+    test('three positive items produce three segments, no "others"', () {
+      // Below the max-items and the hide-last-percent thresholds; the
+      // tail-collapse branch should not fire.
+      final account = v2.EvaluatedAccount(asaitems: [
+        v2.AsaItem(asset: v2.Asa(id: 1, unit: 'A'), value: 50.0, amount: 0),
+        v2.AsaItem(asset: v2.Asa(id: 2, unit: 'B'), value: 30.0, amount: 0),
+        v2.AsaItem(asset: v2.Asa(id: 3, unit: 'C'), value: 20.0, amount: 0),
+      ]);
+      final data = buildAsaChartData(account, palette);
+      expect(data, hasLength(3));
+      expect(data.map((d) => d.title), ['A', 'B', 'C']);
+      expect(data.map((d) => d.y), [50.0, 30.0, 20.0]);
+      expect(data.any((d) => d.title == 'others'), isFalse);
+    });
+
+    test('items beyond max-items - 1 collapse into "others"', () {
+      // 17 items at equal value — exceeds max_items - 2 = 13 at i=14,
+      // so the loop adds the 15th item then breaks into "others".
+      final items = List<v2.AsaItem>.generate(
+        17,
+        (i) => v2.AsaItem(
+          asset: v2.Asa(id: i + 100, unit: 'A$i'),
+          value: 10.0,
+          amount: 0,
+        ),
+      );
+      final data = buildAsaChartData(v2.EvaluatedAccount(asaitems: items), palette);
+      // 15 real + 1 "others" = 16 total. Matches website behavior.
+      expect(data, hasLength(16));
+      expect(data.last.title, 'others');
+    });
+
+    test('hide-last-percent threshold fires before max-items count', () {
+      // One huge item plus many tiny ones — once the huge one is
+      // counted, running > limit immediately and the tail collapses.
+      final items = [
+        v2.AsaItem(
+            asset: v2.Asa(id: 1, unit: 'BIG'), value: 99999.0, amount: 0),
+        for (var i = 0; i < 10; i++)
+          v2.AsaItem(
+              asset: v2.Asa(id: i + 100, unit: 'tiny$i'),
+              value: 0.001,
+              amount: 0),
+      ];
+      final data = buildAsaChartData(v2.EvaluatedAccount(asaitems: items), palette);
+      // After BIG is added (i=0), running (99999) > limit (~99499.5),
+      // so the condition fires on the post-add check and "others"
+      // captures the 10 tinies. Result: BIG + others = 2 segments.
+      expect(data, hasLength(2));
+      expect(data.first.title, 'BIG');
+      expect(data.last.title, 'others');
+    });
+
+    test('palette wraps via modulo when items exceed palette size', () {
+      // Synthetic 2-slot palette + 3 items: 3rd item gets slot 0 again.
+      // Since these are real segments (not "others"), the wrap behavior
+      // is observable via the segment colors.
+      final smallPalette = <String, dynamic>{'0': '#ff0000', '1': '#00ff00'};
+      final account = v2.EvaluatedAccount(asaitems: [
+        v2.AsaItem(asset: v2.Asa(id: 1, unit: 'A'), value: 30.0, amount: 0),
+        v2.AsaItem(asset: v2.Asa(id: 2, unit: 'B'), value: 20.0, amount: 0),
+        v2.AsaItem(asset: v2.Asa(id: 3, unit: 'C'), value: 10.0, amount: 0),
+      ]);
+      final data = buildAsaChartData(account, smallPalette);
+      expect(data, hasLength(3));
+      // First and third items should both have the red color (slot 0).
+      expect((data[0].color as Color).value, (data[2].color as Color).value);
+      // Second should differ.
+      expect((data[0].color as Color).value,
+          isNot((data[1].color as Color).value));
+    });
+
+    test('empty palette falls back to default color without crashing', () {
+      final account = v2.EvaluatedAccount(asaitems: [
+        v2.AsaItem(asset: v2.Asa(id: 1, unit: 'A'), value: 10.0, amount: 0),
+      ]);
+      final data = buildAsaChartData(account, <String, dynamic>{});
+      expect(data, hasLength(1));
+      // Color exists (the default fallback), so the chart still renders.
+      expect(data.first.color, isNotNull);
+    });
+  });
 }

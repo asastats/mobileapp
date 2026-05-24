@@ -10,12 +10,14 @@ import 'package:asa_stats/config/hex_color.dart';
 import 'package:asa_stats/data/repository/app_setting_repo.dart';
 import 'package:asa_stats/models/response/asa_model.dart';
 import 'package:asa_stats/models/response/base/response_model.dart';
+import 'package:asa_stats/models/v2/v2.dart' as v2;
 import 'package:asa_stats/providers/app_setting_provider.dart';
+import 'package:asa_stats/screens/chart_helpers.dart';
 import 'package:asa_stats/screens/web_view/webview_screen.dart';
 import 'package:asa_stats/utility/multiple_gesturedetector.dart';
 import 'package:asa_stats/widgets/chart.dart';
 import 'package:asa_stats/widgets/home/amountHeader.dart';
-import 'package:asa_stats/widgets/home/asa_list_tile.dart';
+import 'package:asa_stats/widgets/home/asa_list_tile_v2.dart';
 import 'package:asa_stats/widgets/theme_search_field.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -62,11 +64,17 @@ class _AsaScreenState extends State<AsaScreen> {
   late TextEditingController _searchController;
   final _searchFocusNode = FocusNode();
 
-  Ratiochart? _ratioChart;
-
-  // ASA
+  // ASA — V1 state still populated by the provider's dual-population
+  // shim. Search keeps using it (``_asaProvider.searchAsa`` works on
+  // v1 shapes) and the screen's ``onAddressTap`` flow still relies on
+  // the v1 ``asaModel.addresses`` until Phase 5d. Renders read from
+  // ``accountV2``.
   ASAModel asaModel = ASAModel();
   ASAModel originalAsaData = ASAModel();
+
+  // Phase 5c-4 — V2 state. ``accountV2.asaitems`` is the source of
+  // truth for every list-tile row in this screen.
+  v2.EvaluatedAccount accountV2 = v2.EvaluatedAccount();
 
   //provider
   late ASAProvider _asaProvider;
@@ -130,8 +138,10 @@ class _AsaScreenState extends State<AsaScreen> {
       slivers: [
         SliverAppBar(
           automaticallyImplyLeading: false,
-          toolbarHeight: (((asaModel.addresses?.length ?? 0) > 4) ? 35 : 0) +
-              (widget.type == CategoryType.nft ? 50 : 100),
+          // Phase 5c-4 — top-level account info from V2.
+          toolbarHeight:
+              (((accountV2.accountInfo?.addresses.length ?? 0) > 4) ? 35 : 0) +
+                  (widget.type == CategoryType.nft ? 50 : 100),
           titleSpacing: 0,
           title: SizedBox(
             width: double.maxFinite,
@@ -147,25 +157,25 @@ class _AsaScreenState extends State<AsaScreen> {
                 const SizedBox(height: 5),
                 Wrap(
                   children: [
-                    ...asaModel.addresses?.map((element) {
-                          String val = "";
-                          val +=
-                              (" ${element.firstChars(5)}...${element.lastChars(5)}");
-                          return GestureDetector(
-                            onTap: () async {
-                              onAddressTap(element);
-                            },
-                            child: Text(
-                              val,
-                              style: const TextStyle(
-                                color: ColorResources.primaryColor,
-                                fontSize: Dimensions.FONT_SIZE_LARGE,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          );
-                        }).toList() ??
-                        [],
+                    ...(accountV2.accountInfo?.addresses ?? const [])
+                        .map((element) {
+                      String val = "";
+                      val +=
+                          (" ${element.firstChars(5)}...${element.lastChars(5)}");
+                      return GestureDetector(
+                        onTap: () async {
+                          onAddressTap(element);
+                        },
+                        child: Text(
+                          val,
+                          style: const TextStyle(
+                            color: ColorResources.primaryColor,
+                            fontSize: Dimensions.FONT_SIZE_LARGE,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ],
@@ -188,8 +198,8 @@ class _AsaScreenState extends State<AsaScreen> {
 
         //? ASA
         if (widget.type == CategoryType.asa)
-          emptyMsg((asaModel.values?.isEmpty ?? false)),
-        ..._sliverAsaList(asaModel.values?.length ?? 0),
+          emptyMsg(accountV2.asaitems.isEmpty),
+        ..._sliverAsaList(accountV2.asaitems.length),
 
         SliverAppBar(
           automaticallyImplyLeading: false,
@@ -284,65 +294,66 @@ class _AsaScreenState extends State<AsaScreen> {
 
   List<Widget> _sliverAsaList(int size) {
     var widgetList = <Widget>[];
-    final max =
-        (asaModel.values?.map((e) => e.value).toList().isNotEmpty ?? false)
-            ? (asaModel.values
-                    ?.map((e) => e.value)
-                    .toList()
-                    .reduce((curr, next) => (curr! > next! ? curr : next)) ??
-                0.0)
-            : 0.0;
+    // Max value across asaitems, used to size the right-tail width on
+    // each row's sticky header. Read from V2 directly.
+    final values = accountV2.asaitems
+        .map((i) => i.value ?? 0.0)
+        .toList(growable: false);
+    final max = values.isEmpty ? 0.0 : values.reduce((a, b) => a > b ? a : b);
     final maxl =
         (Provider.of<AppSettingProvider>(context).currency == Currency.algo
                 ? AppConstants.formateNumber(max, points: "00")
                 : AppConstants.formateNumber(
-                    ((max) / (asaModel.total?.priceusdc ?? 1)),
+                    max / (accountV2.total?.priceusdc ?? 1),
                     points: "00"))
             .length;
+
+    // Palette comes from the bundled / fetched global settings JSON
+    // (``asa_colors`` slot → hex color). Per A7, color is computed
+    // inline at render time: ``palette[i % palette.length]``. Falls
+    // back to ``ColorResources.defaultColor`` for empty/malformed
+    // palettes.
+    final Map<String, dynamic> palette = asaColors['asa_colors'] is Map
+        ? Map<String, dynamic>.from(asaColors['asa_colors'] as Map)
+        : <String, dynamic>{};
+
     for (int index = 0; index < size; index++) {
-      Values data = asaModel.values?[index] ?? Values();
-      String colorValue = "";
-      colorValue = asaModel.colors?.getVal((data.id ?? "").toString()) ?? "";
-      Map<String, dynamic> asaColorsCodes = asaColors["asa_colors"] ?? {};
-      Color color = (asaColorsCodes.getVal(colorValue) != ""
-          ? HexColor(asaColorsCodes.getVal(colorValue))
-          : ColorResources.defaultColor);
+      final item = accountV2.asaitems[index];
+      final assetIdStr = item.asset?.id?.toString() ?? '';
+      final color = _paletteColor(palette, index);
 
       widgetList
         ..add(SliverAppBar(
-          title: getStickyHeader(
+          title: getStickyHeaderV2(
             asaId: asaId,
-            data: data,
+            item: item,
             context: context,
             color: color,
             appSettingProvider: _appSettingProvider,
-            asaData: asaModel,
+            total: accountV2.total,
             onTap: () {
               if (_asaProvider.isCaching) return;
-              if ((asaId == data.asa?.id.toString())) {
-                asaId = "";
+              if (asaId == assetIdStr) {
+                asaId = '';
               } else {
-                asaId = data.asa?.id.toString() ?? "";
+                asaId = assetIdStr;
               }
               setState(() {});
               onListItemTap(index.toDouble(), animate: asaId.isNotEmpty);
             },
             tailWidth: (maxl * 6) + 50,
           ),
-          pinned: (asaId == data.asa?.id.toString()) &&
-              _appSettingProvider
-                  .isExpanded, // hide stick header when it's not visible
+          pinned: (asaId == assetIdStr) && _appSettingProvider.isExpanded,
           automaticallyImplyLeading: false,
           titleSpacing: 0,
         ))
         ..add(
-          ASAListTile(
-            key: ValueKey("$runtimeType ${data.asa?.id} Asa listTile"),
-            title: data.asa?.unit ?? "",
+          ASAListTileV2(
+            key: ValueKey('$runtimeType ${item.asset?.id} Asa listTile'),
+            item: item,
+            total: accountV2.total,
             isAlgo: _appSettingProvider.currency == Currency.algo,
-            values: data,
-            model: asaModel, // remove when we use provider
-            isExpanded: (asaId == data.asa?.id.toString()),
+            isExpanded: asaId == assetIdStr,
             borderColor: color,
             onVisibilityChange: (visible) {
               _appSettingProvider.setValue(visible);
@@ -352,6 +363,17 @@ class _AsaScreenState extends State<AsaScreen> {
     }
 
     return widgetList;
+  }
+
+  /// Resolve a palette slot to a Flutter ``Color``. Wraps via modulo so
+  /// charts/lists with more items than palette slots still render. Falls
+  /// back to ``ColorResources.defaultColor`` for invalid entries.
+  Color _paletteColor(Map<String, dynamic> palette, int index) {
+    if (palette.isEmpty) return ColorResources.defaultColor;
+    final slot = (index % palette.length).toString();
+    final hex = palette[slot];
+    if (hex is! String || hex.isEmpty) return ColorResources.defaultColor;
+    return HexColor(hex);
   }
 
   String getAddress(List<String> address) {
@@ -366,22 +388,23 @@ class _AsaScreenState extends State<AsaScreen> {
     asaResponse = _asaProvider.getResponse();
     if (widget.isSingleAddress) {
       asaModel = _asaProvider.asaModelSingle.copyWith();
+      accountV2 = _asaProvider.accountV2Single ?? v2.EvaluatedAccount();
     } else {
       asaModel = _asaProvider.asaModel.copyWith();
+      accountV2 = _asaProvider.accountV2;
     }
     chartData.clear();
     originalAsaData = asaModel.copyWith();
-    _ratioChart = asaModel.asaChart;
-    for (var i = 0; i < (_ratioChart?.labels?.length ?? 0); i++) {
-      chartData.insert(
-          i,
-          ChartData(
-              color: HexColor(
-                  (_ratioChart?.datasets?[0].backgroundColor?[i] ?? "")),
-              title: (_ratioChart?.labels?[i] ?? ""),
-              y: double.parse(_ratioChart?.datasets?[0].data?[i] ?? "")));
-    }
+
+    // Phase 5c-4 / B8 — asa chart computed inline from accountV2 +
+    // bundled palette. Need to load the palette first since the chart
+    // colors come from ``asa_colors``.
     asaColors = await AppConstants.readGlobalJsonFile(context);
+    final Map<String, dynamic> palette = asaColors['asa_colors'] is Map
+        ? Map<String, dynamic>.from(asaColors['asa_colors'] as Map)
+        : <String, dynamic>{};
+    chartData.addAll(buildAsaChartData(accountV2, palette));
+
     if (_searchController.text.isNotEmpty) {
       _searchData(_searchController.text, widget.type);
     }
@@ -392,7 +415,7 @@ class _AsaScreenState extends State<AsaScreen> {
     double offset = appbarH +
         (widget.type == CategoryType.nft ? 50 : 100) +
         ((index.toInt() == 0) ? 7 : (index * 54)) +
-        (((asaModel.addresses?.length ?? 0) > 4) ? 35 : 0);
+        (((accountV2.accountInfo?.addresses.length ?? 0) > 4) ? 35 : 0);
     if (animate) {
       if (controller.position.maxScrollExtent > 0) {
         controller.animateTo(
@@ -420,7 +443,7 @@ class _AsaScreenState extends State<AsaScreen> {
   }
 
   void onAddressTap(element) async {
-    if ((asaModel.addresses?.length ?? 0) == 1) {
+    if ((accountV2.accountInfo?.addresses.length ?? 0) == 1) {
       String url = 'https://allo.info/account/$element';
       await launchURLApp(url);
       return;
