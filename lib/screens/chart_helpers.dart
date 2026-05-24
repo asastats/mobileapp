@@ -105,6 +105,25 @@ List<ChartData> buildAsaChartData(
   );
 }
 
+/// Build the per-collection distribution chart for the NFT tab.
+///
+/// Same algorithm as [buildAsaChartData] but keyed on
+/// ``NftCollection.name`` / ``NftCollection.value``. Palette comes from
+/// the bundled ``nft_colors`` map (same 18-entry structure as
+/// ``asa_colors``). Returns empty if no collection has a positive
+/// value.
+List<ChartData> buildNftChartData(
+  v2.EvaluatedAccount account,
+  Map<String, dynamic> palette,
+) {
+  return _buildItemsChart(
+    items: account.nftcollections
+        .map((c) => (label: c.name ?? '', value: c.value ?? 0.0))
+        .toList(growable: false),
+    palette: palette,
+  );
+}
+
 /// Generic per-item pie-chart builder reused by buildAsaChartData and
 /// (in Phase 5c-5) buildNftChartData. Takes a list of ``(label, value)``
 /// records sorted descending by value and a hex-color palette dict

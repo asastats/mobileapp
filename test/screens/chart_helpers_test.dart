@@ -272,4 +272,106 @@ void main() {
       expect(data.first.color, isNotNull);
     });
   });
+
+  group('buildNftChartData against the real sample payload', () {
+    late v2.EvaluatedAccount realAccount;
+    final palette = <String, dynamic>{
+      for (var i = 0; i < 18; i++)
+        i.toString():
+            '#${(0x100000 + i * 0x010101).toRadixString(16).padLeft(6, '0')}',
+    };
+
+    setUpAll(() {
+      final raw = jsonDecode(
+        File('test/fixtures/sample_serialized_540A5.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
+      realAccount = v2.EvaluatedAccount.fromJson(raw);
+    });
+
+    test('produces 16 segments for the 55-collection fixture', () {
+      // The fixture has 55 NFT collections — well over the 15-real-item
+      // cap. Expect 15 real + 1 "others" = 16 segments.
+      final data = buildNftChartData(realAccount, palette);
+      expect(data, hasLength(16));
+    });
+
+    test('percentages sum to ~100', () {
+      final data = buildNftChartData(realAccount, palette);
+      final sum = data.fold<double>(0, (s, d) => s + (d.y ?? 0));
+      expect(sum, closeTo(100.0, 0.0001));
+    });
+
+    test('last segment is the "others" bucket', () {
+      final data = buildNftChartData(realAccount, palette);
+      expect(data.last.title, 'others');
+    });
+
+    test('first segment matches the largest collection by value', () {
+      final data = buildNftChartData(realAccount, palette);
+      // Backend returns collections sorted desc by value.
+      expect(data.first.title, realAccount.nftcollections.first.name);
+    });
+  });
+
+  group('buildNftChartData boundary cases', () {
+    final palette = <String, dynamic>{
+      '0': '#ff0000',
+      '1': '#00ff00',
+      '2': '#0000ff',
+    };
+
+    test('empty account returns empty list', () {
+      expect(buildNftChartData(v2.EvaluatedAccount(), palette), isEmpty);
+    });
+
+    test('collections with all zero values return empty list', () {
+      final account = v2.EvaluatedAccount(nftcollections: [
+        v2.NftCollection(name: 'A', value: 0, amount: 0),
+        v2.NftCollection(name: 'B', value: 0, amount: 0),
+      ]);
+      expect(buildNftChartData(account, palette), isEmpty);
+    });
+
+    test('three positive collections produce three segments', () {
+      final account = v2.EvaluatedAccount(nftcollections: [
+        v2.NftCollection(name: 'Collection A', value: 100.0, amount: 0),
+        v2.NftCollection(name: 'Collection B', value: 50.0, amount: 0),
+        v2.NftCollection(name: 'Collection C', value: 25.0, amount: 0),
+      ]);
+      final data = buildNftChartData(account, palette);
+      expect(data, hasLength(3));
+      expect(data.map((d) => d.title),
+          ['Collection A', 'Collection B', 'Collection C']);
+      expect(data.any((d) => d.title == 'others'), isFalse);
+    });
+
+    test('shares the same tail-collapse algorithm as buildAsaChartData', () {
+      // 17 equal-value collections — should produce 15 real + 1 others
+      // = 16 segments, just like the asa case.
+      final colls = List<v2.NftCollection>.generate(
+        17,
+        (i) => v2.NftCollection(
+            name: 'Coll$i', value: 10.0, amount: 0, nfts: const []),
+      );
+      final data = buildNftChartData(
+          v2.EvaluatedAccount(nftcollections: colls), palette);
+      expect(data, hasLength(16));
+      expect(data.last.title, 'others');
+    });
+
+    test('uses palette via modulo wrap', () {
+      // 3 collections + 2-slot palette: indices 0,1,2 -> slots 0,1,0.
+      final smallPalette = <String, dynamic>{'0': '#ff0000', '1': '#00ff00'};
+      final account = v2.EvaluatedAccount(nftcollections: [
+        v2.NftCollection(name: 'A', value: 30.0, amount: 0),
+        v2.NftCollection(name: 'B', value: 20.0, amount: 0),
+        v2.NftCollection(name: 'C', value: 10.0, amount: 0),
+      ]);
+      final data = buildNftChartData(account, smallPalette);
+      expect(data, hasLength(3));
+      expect((data[0].color as Color).value, (data[2].color as Color).value);
+      expect((data[0].color as Color).value,
+          isNot((data[1].color as Color).value));
+    });
+  });
 }
