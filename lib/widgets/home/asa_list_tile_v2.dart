@@ -189,7 +189,7 @@ class _ASAListTileV2State extends State<ASAListTileV2> {
         if (widget.showProviders)
           PricePerUnitV2(
             item: widget.item,
-            usdValue: widget.total?.priceusdc ?? 1,
+            usdValue: widget.total?.priceusdc ?? 1.0,
           ),
         Attribute(
           label: 'URL',
@@ -334,7 +334,7 @@ Widget getStickyHeaderV2({
   final isSelected = asaId == (item.asset?.id?.toString() ?? '');
   final isAlgo = appSettingProvider.currency == Currency.algo;
   final valueAlgo = item.value ?? 0.0;
-  final valueDisplay = isAlgo ? valueAlgo : (valueAlgo / (total?.priceusdc ?? 1));
+  final valueDisplay = isAlgo ? valueAlgo : (valueAlgo / (total?.priceusdc ?? 1.0));
   return GestureDetector(
     onTap: onTap,
     child: Container(

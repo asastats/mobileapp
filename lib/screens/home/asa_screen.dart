@@ -204,10 +204,21 @@ class _AsaScreenState extends State<AsaScreen> {
         SliverAppBar(
           automaticallyImplyLeading: false,
           titleSpacing: 0,
-          toolbarHeight: _asaProvider.getPieChartVisibility() ? 250 : 0,
+          // Phase 5c-fixes — also gate on chartData.isNotEmpty. fl_chart's
+          // PieChart throws "Bad state: No element" on an empty
+          // ``sections`` list (reduces over an empty iterable). Flutter
+          // catches and renders ErrorWidget (red box in debug). With
+          // ``buildAsaChartData`` returning [] when no positive values
+          // exist OR before async updateASAdata populates the list,
+          // skipping the widget entirely is safer.
+          toolbarHeight: (_asaProvider.getPieChartVisibility() &&
+                  chartData.isNotEmpty)
+              ? 250
+              : 0,
           title: Column(
             children: [
-              if (_asaProvider.getPieChartVisibility()) ...[
+              if (_asaProvider.getPieChartVisibility() &&
+                  chartData.isNotEmpty) ...[
                 Chart(
                   paddingTop: 40,
                   chartData: chartData,
@@ -304,7 +315,7 @@ class _AsaScreenState extends State<AsaScreen> {
         (Provider.of<AppSettingProvider>(context).currency == Currency.algo
                 ? AppConstants.formateNumber(max, points: "00")
                 : AppConstants.formateNumber(
-                    max / (accountV2.total?.priceusdc ?? 1),
+                    max / (accountV2.total?.priceusdc ?? 1.0),
                     points: "00"))
             .length;
 

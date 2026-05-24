@@ -95,8 +95,8 @@ class _AmountHeaderState extends State<AmountHeader> {
     final total = _account().total;
     if (total == null) return 0;
     return _asaProvider.getTotalWithoutNfts()
-        ? (total.totalwonft ?? 0)
-        : (total.total ?? 0);
+        ? (total.totalwonft ?? 0.0)
+        : (total.total ?? 0.0);
   }
 
   /// Same as [_totalAlgo] but for USD. V2 also exposes ``totalwonftusdc``,
@@ -105,8 +105,8 @@ class _AmountHeaderState extends State<AmountHeader> {
     final total = _account().total;
     if (total == null) return 0;
     return _asaProvider.getTotalWithoutNfts()
-        ? (total.totalwonftusdc ?? 0)
-        : (total.totalusdc ?? 0);
+        ? (total.totalwonftusdc ?? 0.0)
+        : (total.totalusdc ?? 0.0);
   }
 
   // # The visible "big number" -------------------------------------------
@@ -119,15 +119,15 @@ class _AmountHeaderState extends State<AmountHeader> {
             : '${_totalUsd().toStringAsFixed(2)} USD';
 
       case CategoryType.asa:
-        final asa = _account().total?.asa ?? 0;
+        final asa = _account().total?.asa ?? 0.0;
         if (_isAlgo) return '${asa.toStringAsFixed(2)} ALGO';
-        final priceusdc = _account().total?.priceusdc ?? 1;
+        final priceusdc = _account().total?.priceusdc ?? 1.0;
         return '${(asa / priceusdc).toStringAsFixed(2)} USD';
 
       case CategoryType.nft:
-        final nft = _account().total?.nft ?? 0;
+        final nft = _account().total?.nft ?? 0.0;
         if (_isAlgo) return '${nft.toStringAsFixed(2)} ALGO';
-        final priceusdc = _account().total?.priceusdc ?? 1;
+        final priceusdc = _account().total?.priceusdc ?? 1.0;
         return '${(nft / priceusdc).toStringAsFixed(2)} USD';
     }
     return '';
@@ -140,47 +140,49 @@ class _AmountHeaderState extends State<AmountHeader> {
       case CategoryType.all:
         if (_isAlgo) {
           final usd = _totalUsd();
-          final priceAlgo = _account().total?.pricealgo ?? 0;
+          final priceAlgo = _account().total?.pricealgo ?? 0.0;
           final fmt = AppConstants.formateNumber(priceAlgo, points: '0000');
           return '${usd.toStringAsFixed(2)} USD ($fmt USD/ALGO)';
         } else {
           final algo = _totalAlgo();
           final usd = _totalUsd();
-          final algoPerUsd = usd != 0 ? algo / usd : 0;
+          // ``0.0`` (not ``0``) on the else branch so the ternary stays
+          // ``double`` not ``num`` — ``formateNumber`` takes ``double``.
+          final algoPerUsd = usd != 0 ? algo / usd : 0.0;
           final fmt = AppConstants.formateNumber(algoPerUsd, points: '0000');
           return '${algo.toStringAsFixed(2)} ALGO ($fmt ALGO/USD)';
         }
 
       case CategoryType.asa:
-        final asa = _account().total?.asa ?? 0;
-        final priceusdc = _account().total?.priceusdc ?? 1;
+        final asa = _account().total?.asa ?? 0.0;
+        final priceusdc = _account().total?.priceusdc ?? 1.0;
         if (_isAlgo) {
           final usd = asa / priceusdc;
-          final priceAlgo = _account().total?.pricealgo ?? 0;
+          final priceAlgo = _account().total?.pricealgo ?? 0.0;
           final fmt = AppConstants.formateNumber(priceAlgo, points: '0000');
           return '${usd.toStringAsFixed(2)} USD ($fmt USD/ALGO)';
         } else {
           final priceAlgo = _account().total?.pricealgo == 0
-              ? 1
-              : (_account().total?.pricealgo ?? 1);
-          final algoPerUsd = 1 / priceAlgo;
+              ? 1.0
+              : (_account().total?.pricealgo ?? 1.0);
+          final algoPerUsd = 1.0 / priceAlgo;
           final fmt = AppConstants.formateNumber(algoPerUsd, points: '0000');
           return '${asa.toStringAsFixed(2)} ALGO ($fmt ALGO/USD)';
         }
 
       case CategoryType.nft:
-        final nft = _account().total?.nft ?? 0;
-        final priceusdc = _account().total?.priceusdc ?? 1;
+        final nft = _account().total?.nft ?? 0.0;
+        final priceusdc = _account().total?.priceusdc ?? 1.0;
         if (_isAlgo) {
           final usd = nft / priceusdc;
-          final priceAlgo = _account().total?.pricealgo ?? 0;
+          final priceAlgo = _account().total?.pricealgo ?? 0.0;
           final fmt = AppConstants.formateNumber(priceAlgo, points: '0000');
           return '${usd.toStringAsFixed(2)} USD ($fmt USD/ALGO)';
         } else {
           final priceAlgo = _account().total?.pricealgo == 0
-              ? 1
-              : (_account().total?.pricealgo ?? 1);
-          final algoPerUsd = 1 / priceAlgo;
+              ? 1.0
+              : (_account().total?.pricealgo ?? 1.0);
+          final algoPerUsd = 1.0 / priceAlgo;
           final fmt = AppConstants.formateNumber(algoPerUsd, points: '0000');
           return '${nft.toStringAsFixed(2)} ALGO ($fmt ALGO/USD)';
         }

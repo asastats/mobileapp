@@ -176,7 +176,7 @@ class _ASADataV2State extends State<ASADataV2> {
         Provider.of<AppSettingProvider>(context).currency == Currency.algo;
     final displayValue = isCurrencyAlgo
         ? progValue
-        : progValue / (widget.total?.priceusdc ?? 1);
+        : progValue / (widget.total?.priceusdc ?? 1.0);
     final displayUnit = isCurrencyAlgo ? 'ALGO' : 'USD';
 
     final rows = <Widget>[];
@@ -351,7 +351,7 @@ class DistributorWidgetV2 extends StatelessWidget {
     final decimals = item.asset?.decimals ?? 0;
     final isCurrencyAlgo =
         Provider.of<AppSettingProvider>(context).currency == Currency.algo;
-    final priceusdc = total?.priceusdc ?? 1;
+    final priceusdc = total?.priceusdc ?? 1.0;
     final valueDisplay = (distributor.value ?? 1.0) /
         (isCurrencyAlgo ? 1.0 : priceusdc);
     final valueUnit = isCurrencyAlgo ? 'ALGO' : 'USD';

@@ -201,10 +201,18 @@ class _NftScreenState extends State<NftScreen> {
         SliverAppBar(
           automaticallyImplyLeading: false,
           titleSpacing: 0,
-          toolbarHeight: _asaProvider.getPieChartVisibility() ? 250 : 0,
+          // Phase 5c-fixes — gate on chartData.isNotEmpty too. fl_chart
+          // throws "Bad state: No element" on an empty ``sections`` list
+          // (it reduces over an empty iterable). Flutter catches that
+          // and renders the red ErrorWidget in place of the chart.
+          toolbarHeight: (_asaProvider.getPieChartVisibility() &&
+                  chartData.isNotEmpty)
+              ? 250
+              : 0,
           title: Column(
             children: [
-              if (_asaProvider.getPieChartVisibility()) ...[
+              if (_asaProvider.getPieChartVisibility() &&
+                  chartData.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 Chart(
                   chartData: chartData,

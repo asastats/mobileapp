@@ -117,7 +117,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       if (_asaProvider.accountV2.asaitems.isNotEmpty ||
           _asaProvider.accountV2.nftcollections.isNotEmpty ||
           _asaProvider.accountV2.notevals.isNotEmpty) {
-        preCacheImages(_asaProvider.asaModel.nftValues ?? []);
+        preCacheImages(_asaProvider.accountV2.nftcollections);
         await updateASAdata();
         autoRefresh();
       }
@@ -138,7 +138,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             await _asaProvider.getEvaluatedAccountV2(response.data);
         showEasyLoader(_asaProvider.isLoading);
         if (responseData.isSuccess) {
-          preCacheImages(_asaProvider.asaModel.nftValues ?? []);
+          preCacheImages(_asaProvider.accountV2.nftcollections);
           await updateASAdata();
           autoRefresh();
         }
@@ -319,10 +319,16 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
         SliverAppBar(
           automaticallyImplyLeading: false,
           titleSpacing: 0,
-          toolbarHeight: _asaProvider.getPieChartVisibility() ? 250 : 0,
+          // Phase 5c-fixes — gate on chartData.isNotEmpty too. fl_chart
+          // throws "Bad state: No element" on an empty ``sections`` list.
+          toolbarHeight: (_asaProvider.getPieChartVisibility() &&
+                  chartData.isNotEmpty)
+              ? 250
+              : 0,
           title: Column(
             children: [
-              if (_asaProvider.getPieChartVisibility()) ...[
+              if (_asaProvider.getPieChartVisibility() &&
+                  chartData.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 Chart(
                   chartData: chartData,
@@ -420,7 +426,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
         (Provider.of<AppSettingProvider>(context).currency == Currency.algo
                 ? AppConstants.formateNumber(max, points: "00")
                 : AppConstants.formateNumber(
-                    ((max) / (accountV2.total?.priceusdc ?? 1)),
+                    ((max) / (accountV2.total?.priceusdc ?? 1.0)),
                     points: "00"))
             .length;
     for (int index = 0; index < size; index++) {

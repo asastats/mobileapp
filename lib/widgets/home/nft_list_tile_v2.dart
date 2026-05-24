@@ -190,7 +190,7 @@ class _NFTListTileV2State extends State<NFTListTileV2> {
           _label('Estimated Value: '),
         ],
       ),
-      _label(_priceLine(item.price ?? 0)),
+      _label(_priceLine(item.price ?? 0.0)),
       const SizedBox(height: 18),
     ];
 
@@ -301,7 +301,7 @@ class _NFTListTileV2State extends State<NFTListTileV2> {
   // # Listing / Transaction row builders --------------------------------
 
   Widget _listingRow(v2.NftListing listing) {
-    final priceDisplay = _priceLine(listing.price ?? 0);
+    final priceDisplay = _priceLine(listing.price ?? 0.0);
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.end,
       alignment: WrapAlignment.end,
@@ -351,7 +351,7 @@ class _NFTListTileV2State extends State<NFTListTileV2> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         _label(
-            '${type.name} purchase: ${_priceLine(trans.price ?? 0)}'),
+            '${type.name} purchase: ${_priceLine(trans.price ?? 0.0)}'),
         const SizedBox(height: 4),
         RichText(
           textAlign: TextAlign.right,
@@ -389,7 +389,7 @@ class _NFTListTileV2State extends State<NFTListTileV2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        _label('Floor price: ${_priceLine(listing.price ?? 0)}'),
+        _label('Floor price: ${_priceLine(listing.price ?? 0.0)}'),
         const SizedBox(height: 4),
         RichText(
           text: TextSpan(
@@ -418,7 +418,7 @@ class _NFTListTileV2State extends State<NFTListTileV2> {
   String _priceLine(double priceAlgo) {
     final isAlgo = Provider.of<AppSettingProvider>(context).currency ==
         Currency.algo;
-    final usdRate = widget.total?.priceusdc ?? 1;
+    final usdRate = widget.total?.priceusdc ?? 1.0;
     final display = isAlgo ? priceAlgo : (priceAlgo / usdRate);
     return '${display.toStringAsFixed(2)} ${Provider.of<AppSettingProvider>(context).currency.name.toUpperCase()}';
   }
@@ -535,7 +535,7 @@ Widget nftStickyHeaderV2({
 }) {
   final title = '${AppConstants.removeDecimalZeroFormat(collection.amount ?? 0)} ${collection.name ?? ''}';
   final isAlgo = appSettingProvider.currency == Currency.algo;
-  final priceusdc = total?.priceusdc ?? 1;
+  final priceusdc = total?.priceusdc ?? 1.0;
   final valueAlgo = collection.value ?? 0.0;
   final subTitle =
       (isAlgo ? valueAlgo : (valueAlgo / priceusdc)).toStringAsFixed(2);
