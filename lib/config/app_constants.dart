@@ -112,7 +112,7 @@ class AppConstants {
         (int.tryParse(parts[1]) != 0 ? '.' + parts[1] : '');
   }
 
-  static String removeDecimalZeroFormat(double n) {
+  static String removeDecimalZeroFormat(num n) {
     return n.toStringAsFixed(n.truncateToDouble() == n ? 0 : 1);
   }
 

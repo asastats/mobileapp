@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../config/dimensions.dart';
 
-String formateAmount(double amount, int decimal, int dNumber) {
+String formateAmount(num amount, int decimal, int dNumber) {
   // dNumber parameter specifies how many digits to keep after the decimal point.
 
   String f = (amount / math.pow(10, decimal))
