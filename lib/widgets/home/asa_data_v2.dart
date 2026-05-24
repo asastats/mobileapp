@@ -181,7 +181,7 @@ class _ASADataV2State extends State<ASADataV2> {
 
     final rows = <Widget>[];
 
-    // First: the program value (always present).
+    // 1. The program value (always present).
     rows.add(Text(
       '${displayValue.toStringAsFixed(2)} $displayUnit',
       textAlign: TextAlign.end,
@@ -193,7 +193,7 @@ class _ASADataV2State extends State<ASADataV2> {
       ),
     ));
 
-    // Second: program name+code link (or span when no URL).
+    // 2. Program name+code link (or span when no URL).
     if (progName != null) {
       final label = progCode != null ? '$progName $progCode' : progName;
       if (progUrl != null && progUrl.isNotEmpty) {
@@ -206,19 +206,28 @@ class _ASADataV2State extends State<ASADataV2> {
       rows.add(_textRow(progCode));
     }
 
-    // Third: balance line for non-ALGO assets with a program amount.
+    // 3. Per-linked rows. Mirrors the website template's `{% for ld
+    // in prog.linked %}` block. We filter out "Source LP token" rows
+    // — those are an internal program-state marker the website and old
+    // mobile app never rendered (they appear in v2 because the v2
+    // serializer exposes the raw linked-data list, and the website
+    // template happens to skip them). Match by exact text.
+    for (final ld in program.linked) {
+      if (ld.text == 'Source LP token') continue;
+      rows.add(_linkedRow(ld, decimals, asaUnit, isAlgo: isAlgo));
+    }
+
+    // 4. Balance/amount line for non-ALGO assets with a program amount.
+    // Rendered LAST (after the linked rows) — matches the v1 mobile
+    // app's layout where the amount line appeared at the bottom of the
+    // program block. For an "Added Liquidity" program the line reads
+    // "Added: 1.134959 EURS"; for a "Balance" program "Balance: 0.4 X".
     if (!isAlgo && progAmount != null && progAmount > 0 && progType != null) {
       final formatted = AppConstants.formateNumber(
         double.parse(formateAmount(progAmount, decimals, 6)),
         points: '000000',
       );
       rows.add(_textRow('$progType: $formatted $asaUnit'));
-    }
-
-    // Fourth: per-linked rows. Mirrors the website template's `{% for ld
-    // in prog.linked %}` block.
-    for (final ld in program.linked) {
-      rows.add(_linkedRow(ld, decimals, asaUnit, isAlgo: isAlgo));
     }
 
     return rows;

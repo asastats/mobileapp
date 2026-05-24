@@ -23,7 +23,8 @@ import 'package:asa_stats/utility/utils.dart';
 import 'package:asa_stats/widgets/chart.dart';
 import 'package:asa_stats/widgets/home/address_action_row.dart';
 import 'package:asa_stats/widgets/home/amountHeader.dart';
-import 'package:asa_stats/widgets/home/asa_list_tile.dart';
+import 'package:asa_stats/widgets/home/asa_list_tile_v2.dart';
+import 'package:asa_stats/widgets/home/nft_list_tile_v2.dart';
 import 'package:asa_stats/widgets/home/not_eval_list_tile.dart';
 import 'package:asa_stats/widgets/progressbar.dart';
 import 'package:asa_stats/widgets/refresh_widget.dart';
@@ -112,7 +113,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       // never null (provider initializes it to ``EvaluatedAccount()`` —
       // empty lists for asaitems/nftcollections/notevals), so we check
       // for non-empty content rather than null. ``preCacheImages`` still
-      // takes the V1 NftValues list; the shim keeps that populated.
+      // takes the V2 NftCollection list (migrated 5c-fixes).
       if (_asaProvider.accountV2.asaitems.isNotEmpty ||
           _asaProvider.accountV2.nftcollections.isNotEmpty ||
           _asaProvider.accountV2.notevals.isNotEmpty) {
@@ -423,55 +424,49 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                     points: "00"))
             .length;
     for (int index = 0; index < size; index++) {
-      Values data = asaModel.values?[index] ?? Values();
-      String colorValue = "";
-      colorValue = asaModel.colors?.getVal((data.id ?? "").toString()) ?? "";
-      Map<String, dynamic> asaColorsCodes = asaColors["asa_colors"] ?? {};
-      Color color = (asaColorsCodes.getVal(colorValue) != ""
-          ? HexColor(asaColorsCodes.getVal(colorValue))
-          : ColorResources.defaultColor);
+      // Phase 5d-prep — iterate V2 directly. Per-row color computed
+      // inline (palette[i % palette.length]) per A7.
+      final item = accountV2.asaitems[index];
+      final assetIdStr = item.asset?.id?.toString() ?? '';
+      final Map<String, dynamic> palette = asaColors['asa_colors'] is Map
+          ? Map<String, dynamic>.from(asaColors['asa_colors'] as Map)
+          : <String, dynamic>{};
+      final color = _paletteColor(palette, index);
 
       widgetList
         ..add(SliverAppBar(
-          title: getStickyHeader(
+          title: getStickyHeaderV2(
             asaId: asaId,
-            data: data,
+            item: item,
             context: context,
             color: color,
             appSettingProvider: _appSettingProvider,
-            asaData: asaModel,
+            total: accountV2.total,
             onTap: () {
               if (_asaProvider.isCaching) return;
-              if ((asaId == data.asa?.id.toString())) {
-                asaId = "";
+              if (asaId == assetIdStr) {
+                asaId = '';
               } else {
-                asaId = data.asa?.id.toString() ?? "";
+                asaId = assetIdStr;
               }
               setState(() {});
               onListItemTap(index.toDouble(), animate: asaId.isNotEmpty);
             },
             tailWidth: (maxl * 6) + 50,
           ),
-          pinned: (asaId == data.asa?.id.toString()) &&
-              _appSettingProvider
-                  .isExpanded, // hide stick header when it's not visible
+          pinned: (asaId == assetIdStr) && _appSettingProvider.isExpanded,
           automaticallyImplyLeading: false,
           titleSpacing: 0,
         ))
         ..add(
-          ASAListTile(
-            key: ValueKey("$runtimeType ${data.asa?.id} Asa listTile"),
-            // upper line change unit to id, and it doesn't crash
-            title: data.asa?.unit ?? "",
+          ASAListTileV2(
+            key: ValueKey('$runtimeType ${item.asset?.id} Asa listTile'),
+            item: item,
+            total: accountV2.total,
             isAlgo: _appSettingProvider.currency == Currency.algo,
-            values: data,
-            model: asaModel, // remove when we use provider
-            isExpanded: (asaId == data.asa?.id.toString()),
+            isExpanded: asaId == assetIdStr,
             borderColor: color,
             onVisibilityChange: (visible) {
-              // setState(() {
-              //   _expandedVisible = visible;
-              // });
               _appSettingProvider.setValue(visible);
             },
           ),
@@ -484,79 +479,55 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   List<Widget> _sliverNFTList(int size) {
     var widgetList = <Widget>[];
     int crossAxisCount = countCrossAxisNFT(context);
+    final Map<String, dynamic> palette = asaColors['nft_colors'] is Map
+        ? Map<String, dynamic>.from(asaColors['nft_colors'] as Map)
+        : <String, dynamic>{};
+
     for (int index = 0; index < size; index++) {
-      NftValues data = asaModel.nftValues?[index] ?? NftValues();
-      String colorValue = "";
-      colorValue =
-          asaModel.nftColors?.getVal((data.collection ?? "").toString()) ?? "";
-      Map<String, dynamic> asaColorsCodes = asaColors["nft_colors"] ?? {};
-      Color color = (asaColorsCodes.getVal(colorValue) != ""
-          ? HexColor(asaColorsCodes.getVal(colorValue))
-          : ColorResources.defaultColor);
-      var length = (data.nfts
-                  ?.map<String>(
-                      (e) => AppConstants.getNFTImage(e.nft?.tpath ?? ""))
-                  .toList() ??
-              [])
-          .length;
-      int nftRowCount = ((length + 1) / crossAxisCount).ceil();
-      int height = (asaId == data.collection.toString())
+      final coll = accountV2.nftcollections[index];
+      final collName = coll.name ?? '';
+      final color = _paletteColor(palette, index);
+      final length = coll.nfts.length;
+      final nftRowCount = ((length + 1) / crossAxisCount).ceil();
+      final isExpanded = (asaId == collName);
+      final int height = isExpanded
           ? 50
           : nftRowCount > 1
               ? (nftRowCount * 40) + 39
               : 50;
+
       widgetList
         ..add(SliverAppBar(
           toolbarHeight: height.toDouble() + 7,
-          title: nftStickyHeader(
-            hash: (data.nfts != null && data.nfts!.isNotEmpty)
-                ? data.nfts!.first.nft?.hash
-                : null,
+          title: nftStickyHeaderV2(
             context: context,
-            height: height,
-            isExpanded: (asaId == data.collection.toString()),
-            crossAxisCount: crossAxisCount,
+            collection: coll,
+            total: accountV2.total,
             borderColor: color,
             appSettingProvider: _appSettingProvider,
-            asaData: asaModel,
-            title: AppConstants.removeDecimalZeroFormat(data.amount ?? 0) +
-                " " +
-                (data.collection ?? ""),
-            images:
-                data.nfts?.map<String>((e) => e.nft?.tpath ?? "").toList() ??
-                    [],
-            imageHashes: data.nfts?.map((e) => e.nft?.hash).toList() ?? [],
-            miniSubTitle: "BETA ",
-            subTitle: (_appSettingProvider.currency == Currency.algo
-                ? (data.value ?? 0.0).toStringAsFixed(2)
-                : ((data.value ?? 0) / (accountV2.total?.priceusdc ?? 1))
-                    .toStringAsFixed(2)),
+            crossAxisCount: crossAxisCount,
+            isExpanded: isExpanded,
+            height: height,
             onTap: () {
-              double nHeight = 0;
               if (_asaProvider.isCaching) return;
+              double nHeight = 0;
               setState(() {
-                asaId = asaId == data.collection.toString()
-                    ? ""
-                    : data.collection.toString();
+                asaId = isExpanded ? '' : collName;
               });
-              if ((asaId == data.collection.toString())) {
+              if (asaId == collName) {
                 _appSettingProvider.setValue(true);
               }
               for (int i = 0; i < index; i++) {
-                NftValues data = asaModel.nftValues?[i] ?? NftValues();
-                var length = (data.nfts
-                            ?.map<String>((e) =>
-                                AppConstants.getNFTImage(e.nft?.tpath ?? ""))
-                            .toList() ??
-                        [])
-                    .length;
-                int nftRowCount = ((length + 1) / crossAxisCount).ceil();
-                int height = (asaId == data.collection.toString())
+                final prev = accountV2.nftcollections[i];
+                final prevImagesLen = prev.nfts.length;
+                final prevRowCount =
+                    ((prevImagesLen + 1) / crossAxisCount).ceil();
+                final int prevHeight = (asaId == (prev.name ?? ''))
                     ? 50
-                    : nftRowCount > 1
-                        ? (nftRowCount * 39) + 45
+                    : prevRowCount > 1
+                        ? (prevRowCount * 39) + 45
                         : 0;
-                nHeight += height;
+                nHeight += prevHeight;
               }
               onListItemTap(
                   ((widget.type == CategoryType.all
@@ -568,25 +539,17 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                   nHeight: nHeight);
             },
           ),
-          pinned: (asaId == data.collection.toString()) &&
-              _appSettingProvider
-                  .isExpanded, //? hide stick header when it's not visible
+          pinned: isExpanded && _appSettingProvider.isExpanded,
           automaticallyImplyLeading: false,
           titleSpacing: 0,
         ))
         ..add(
-          NFTListTile(
-            key: ValueKey("$runtimeType ${data.collection} NFT List tile"),
-            isExpanded: (asaId == data.collection.toString()),
-            title: "${data.amount ?? 0}  ${data.collection ?? ""}",
-            subTitle: "BETA",
-            images: data.nfts
-                    ?.map<String>((e) => e.nft?.urls?['URL'] ?? "")
-                    .toList() ??
-                [],
-            nftValues: data,
-            model: asaModel, // remove when we use provider
+          NFTListTileV2(
+            key: ValueKey('$runtimeType $collName NFT List tile'),
+            collection: coll,
+            total: accountV2.total,
             borderColor: color,
+            isExpanded: isExpanded,
             onVisibilityChange: (visible) {
               _appSettingProvider.setValue(visible);
             },
@@ -614,18 +577,14 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           //List height count
           int crossAxisCount = countCrossAxisNFT(context);
           setState(() {});
-          // Per-item drill below (NftValues data + .nfts.map) stays on
-          // V1 until 5c-5; the loop bound now uses V2.
+          // Per-item drill below: iterate V2 nftcollections; the
+          // measurement only needs counts, so no v1 reads.
           for (int i = 0; i < accountV2.nftcollections.length; i++) {
-            NftValues data = asaModel.nftValues?[i] ?? NftValues();
-            var length = (data.nfts
-                        ?.map<String>(
-                            (e) => AppConstants.getNFTImage(e.nft?.tpath ?? ""))
-                        .toList() ??
-                    [])
-                .length;
-            int nftRowCount = ((length + 1) / crossAxisCount).ceil();
-            int height = (asaId == data.collection.toString())
+            final coll = accountV2.nftcollections[i];
+            final imgCount = coll.nfts.length;
+            final nftRowCount = ((imgCount + 1) / crossAxisCount).ceil();
+            final collName = coll.name ?? '';
+            final int height = (asaId == collName)
                 ? 50
                 : nftRowCount > 1
                     ? (nftRowCount * 39) + 45
@@ -645,22 +604,25 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       titleSpacing: 0,
     ));
     for (int index = 0; index < size; index++) {
-      NotEval data = asaModel.notEval?[index] ?? NotEval();
+      // NotEvaluatedItem -> AsaItem: V2 shapes share the asset/amount/
+      // programs fields; the not-eval items just don't have a value or
+      // price (those default to null on AsaItem, which the tile renders
+      // as zero/empty). Wrapping on the fly is cleaner than having a
+      // parallel NotEvalListTileV2 — the user-visible difference is
+      // ``showProviders: false`` (links are computed-value features
+      // that don't apply to not-eval rows).
+      final noteval = accountV2.notevals[index];
+      final wrapped = v2.AsaItem(
+        asset: noteval.asset,
+        amount: noteval.amount,
+        programs: noteval.programs,
+      );
       widgetList.add(
-        ASAListTile(
-          // key: ValueKey("asaListTile ${data.asa?.unit ?? ""}"),
-          title: data.asa?.unit ?? "",
+        ASAListTileV2(
+          item: wrapped,
+          total: accountV2.total,
           isAlgo: _appSettingProvider.currency == Currency.algo,
-          values: Values(
-            amount: data.amount,
-            asa: data.asa,
-            dapps: data.dapps,
-            id: data.id,
-            price: data.price,
-            value: data.value,
-          ),
-          model: asaModel, // remove when we use provider
-          isExpanded: (asaId == "not evaluated"),
+          isExpanded: (asaId == 'not evaluated'),
           borderColor: ColorResources.whiteColor,
           showProviders: false,
           onVisibilityChange: (visible) {},
@@ -774,17 +736,22 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
     });
   }
 
-  void preCacheImages(List<NftValues> list) async {
+  void preCacheImages(List<v2.NftCollection> list) async {
     _asaProvider.isCaching = true;
 
-    for (NftValues nft in list) {
-      for (Nfts n in (nft.nfts ?? [])) {
-        String? imagePath = n.nft?.path ?? "";
-        String? imageHash = n.nft?.hash ?? "";
+    for (final coll in list) {
+      for (final n in coll.nfts) {
+        final imagePath = n.nft?.image ?? '';
 
         if (!_asaProvider.imageProviders.containsKey(imagePath) &&
-            imagePath.isNotEmpty &&
-            (imageHash.isEmpty)) {
+            imagePath.isNotEmpty) {
+          // V2 has no ``hash`` field; we always pre-cache. The v1 path's
+          // hash-presence skip was a duplication avoidance heuristic
+          // for assets that shared their on-chain hash; without it we
+          // may pre-cache the same URL twice if it appears across
+          // collections. ``CachedNetworkImage`` deduplicates on URL at
+          // the disk-cache layer anyway, so the cost is one extra
+          // in-memory ImageProvider entry per duplicate URL.
           Image image = Image.network(
             AppConstants.getNFTImage(imagePath),
             height: 156,
@@ -794,7 +761,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           await precacheImage(image.image, context);
           _asaProvider.imageProviders[imagePath] = image;
 
-          log("Pre-cached image $imagePath", name: "Image Caching");
+          log('Pre-cached image $imagePath', name: 'Image Caching');
         }
       }
     }
@@ -870,5 +837,17 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       }
     }
     return;
+  }
+
+  /// Resolve a palette slot (decimal-string key) to a Flutter ``Color``.
+  /// Wraps via modulo so a chart/list with more items than palette slots
+  /// still renders. Falls back to ``ColorResources.defaultColor`` for
+  /// invalid entries.
+  Color _paletteColor(Map<String, dynamic> palette, int index) {
+    if (palette.isEmpty) return ColorResources.defaultColor;
+    final slot = (index % palette.length).toString();
+    final hex = palette[slot];
+    if (hex is! String || hex.isEmpty) return ColorResources.defaultColor;
+    return HexColor(hex);
   }
 }
