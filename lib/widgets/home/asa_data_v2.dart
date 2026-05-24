@@ -222,15 +222,80 @@ class _ASADataV2State extends State<ASADataV2> {
     // app's layout where the amount line appeared at the bottom of the
     // program block. For an "Added Liquidity" program the line reads
     // "Added: 1.134959 EURS"; for a "Balance" program "Balance: 0.4 X".
+    //
+    // Phase 5c-fixes / M4 — the "Balance:" label specifically gets a
+    // green background (``ColorResources.primaryColor``), matching the
+    // old version. ``Balance`` is the key value users look for, so the
+    // visual cue draws attention. Other program types (Added, Locked,
+    // Deposited, etc.) render with no background.
     if (!isAlgo && progAmount != null && progAmount > 0 && progType != null) {
       final formatted = AppConstants.formateNumber(
         double.parse(formateAmount(progAmount, decimals, 6)),
         points: '000000',
       );
-      rows.add(_textRow('$progType: $formatted $asaUnit'));
+      if (progType == 'Balance') {
+        rows.add(_balanceRow(formatted, asaUnit));
+      } else {
+        rows.add(_textRow('$progType: $formatted $asaUnit'));
+      }
+    }
+
+    // 5. Per-program price line (Phase 5c-fixes / M3) — mirrors the
+    // website's ``<span class="price">`` row that appears under each
+    // distribution and balance row, e.g. "1,240.85 ALGO/GOLD$" for a
+    // Balance program. The displayed value is ``item.price`` (ALGO per
+    // 1 unit of asset). Distribution-row prices are rendered separately
+    // by ``DistributorWidgetV2`` (inverted form: ``USDC/ALGO``).
+    //
+    // We render this only for the Balance program here — other programs
+    // (Added, Locked, etc.) get the inverted form via the distribution
+    // sub-rows, which already include the price line. Skipped for ALGO
+    // itself ("1 ALGO/ALGO" is meaningless) and when price is 0/null.
+    if (progType == 'Balance' &&
+        !isAlgo &&
+        (widget.item.price ?? 0.0) > 0 &&
+        asaUnit.isNotEmpty) {
+      final price = widget.item.price!;
+      rows.add(_textRow(
+          '${AppConstants.formateNumber(price, points: '00000000')} ALGO/$asaUnit'));
     }
 
     return rows;
+  }
+
+  /// Balance row with a green ``Balance:`` label (M4). The amount
+  /// portion is plain. Renders as a single ``RichText`` so the green
+  /// background hugs only the "Balance:" text.
+  Widget _balanceRow(String formatted, String asaUnit) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: RichText(
+        textAlign: TextAlign.end,
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: ' Balance: ',
+              style: TextStyle(
+                color: ColorResources.whiteColor,
+                backgroundColor: ColorResources.primaryColor,
+                fontSize: Dimensions.FONT_SIZE_SMALL,
+                fontWeight: FontWeight.w700,
+                fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+              ),
+            ),
+            TextSpan(
+              text: ' $formatted $asaUnit',
+              style: TextStyle(
+                color: ColorResources.themeTextColor(context),
+                fontSize: Dimensions.FONT_SIZE_SMALL,
+                fontWeight: FontWeight.w600,
+                fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _linkRow(String label, String url) {
@@ -398,6 +463,26 @@ class DistributorWidgetV2 extends StatelessWidget {
                 fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
               ),
             ),
+          // Per-distribution price line. Phase 5c-fixes / M3 — mirrors
+          // the website's ``<span class="price">`` row, e.g.
+          // "0.10966392 USDC/ALGO". The numeric value is
+          // ``1 / item.price``, formatted to 8 decimals; the unit is
+          // "<asset_unit>/ALGO". Skipped for ALGO itself (price line
+          // of 1 ALGO/ALGO is meaningless) and when price is null/zero.
+          if ((item.price ?? 0.0) > 0 &&
+              asaUnit.isNotEmpty &&
+              asaUnit != 'ALGO') ...[
+            SizedBox(height: 4.h),
+            Text(
+              '${AppConstants.formateNumber(1.0 / item.price!, points: '00000000')} $asaUnit/ALGO',
+              style: TextStyle(
+                color: ColorResources.themeTextColor(context),
+                fontSize: Dimensions.FONT_SIZE_SMALL,
+                fontWeight: FontWeight.w600,
+                fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+              ),
+            ),
+          ],
         ],
       ),
     );

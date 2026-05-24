@@ -270,8 +270,18 @@ class _ChartState extends State<Chart> {
 
   Widget _buildSumLabel(
       BuildContext context, AppSettingProvider appSettingProvider) {
-    final asaModel = widget.categoryScreenState.asaModel;
-    final priceusdc = asaModel.total?.priceusdc ?? 1.0;
+    // Phase 5c-fixes — read from the screen's ``accountV2`` (V2
+    // ``EvaluatedAccount``) instead of the v1 ``asaModel``. The v1
+    // path computed "include NFTs total" as ``total.total + total.nft``
+    // because v1 ``total.total`` excluded NFT; under V2 ``total.total``
+    // already includes NFT, so the old arithmetic double-counts.
+    //
+    // We still access via ``widget.categoryScreenState`` (dynamic) since
+    // each screen class exposes ``accountV2`` as a field. Same access
+    // pattern as the existing ``.asaModel`` read; nothing to change at
+    // the call sites.
+    final accountV2 = widget.categoryScreenState.accountV2;
+    final priceusdc = accountV2.total?.priceusdc ?? 1.0;
     final bool isUsd = appSettingProvider.currency == Currency.usd;
 
     double totalSum = 0;
@@ -286,28 +296,51 @@ class _ChartState extends State<Chart> {
 
     double visibleAlgo;
     if (widget.type == CategoryType.asa) {
-      final base = asaModel.total?.asa ?? 0;
-      visibleAlgo = totalSum > 0 ? (visibleSum / totalSum) * base : 0;
+      final double base = accountV2.total?.asa ?? 0.0;
+      visibleAlgo = totalSum > 0 ? (visibleSum / totalSum) * base : 0.0;
     } else if (widget.type == CategoryType.nft) {
-      final base = asaModel.total?.nft ?? 0;
-      visibleAlgo = totalSum > 0 ? (visibleSum / totalSum) * base : 0;
+      final double base = accountV2.total?.nft ?? 0.0;
+      visibleAlgo = totalSum > 0 ? (visibleSum / totalSum) * base : 0.0;
     } else {
       // Ratio chart has 3 items: ["ALGO", "ASA", "NFT"] as % of full total.
-      // Each item's real ALGO value = (item.y / totalSum) * fullTotal.
-      final fullTotal =
-          (asaModel.total?.total ?? 0) + (asaModel.total?.nft ?? 0);
+      // Each item's real ALGO value = (item.y / totalSum) * fullTotal,
+      // where ``fullTotal`` is the all-inclusive ``total.total`` under
+      // V2 (was ``total.total + total.nft`` under V1's stripped-NFT
+      // semantics). When the user has the "exclude NFTs" toggle on,
+      // V2 also gives us ``total.totalwonft`` directly — no client-side
+      // arithmetic and no segment-skipping math.
       final asaProvider = Provider.of<ASAProvider>(context, listen: false);
       final excludeNfts = asaProvider.getTotalWithoutNfts();
+      final double base = excludeNfts
+          ? (accountV2.total?.totalwonft ?? 0.0)
+          : (accountV2.total?.total ?? 0.0);
 
       double effectiveVisibleSum = 0;
       for (int i = 0; i < widget.chartData.length; i++) {
         if (_isVisible[i]) {
+          // When excludeNfts is on, the NFT segment shouldn't contribute
+          // to the displayed total even if its checkbox is still on.
           if (excludeNfts && widget.chartData[i].title == 'NFT') continue;
           effectiveVisibleSum += widget.chartData[i].y ?? 0;
         }
       }
-      visibleAlgo =
-          totalSum > 0 ? (effectiveVisibleSum / totalSum) * fullTotal : 0;
+
+      // ``effectiveVisibleSum`` is in the same scale as ``totalSum``
+      // (both sum the y-values of segments). When excludeNfts is on,
+      // we also need to subtract the NFT segment's y from totalSum so
+      // the ratio reflects "visible portion of the non-NFT total".
+      double effectiveTotalSum = totalSum;
+      if (excludeNfts) {
+        for (int i = 0; i < widget.chartData.length; i++) {
+          if (widget.chartData[i].title == 'NFT') {
+            effectiveTotalSum -= widget.chartData[i].y ?? 0;
+            break;
+          }
+        }
+      }
+      visibleAlgo = effectiveTotalSum > 0
+          ? (effectiveVisibleSum / effectiveTotalSum) * base
+          : 0.0;
     }
 
     final double displayValue = isUsd ? visibleAlgo / priceusdc : visibleAlgo;
