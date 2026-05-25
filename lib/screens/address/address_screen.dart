@@ -214,36 +214,26 @@ class _AddressScreenState extends State<AddressScreen> {
     showEasyLoader(true);
 
     await _asaProvider.saveAddress(_asaProvider.address);
-    // Phase 5c — address lookup migrated to V2. The V2 contract is
-    // ``POST /api/v2/`` with ``{"addresses": "..."}`` (the provider's
-    // ``getBundleHashV2`` wraps that for us; here we pass the raw value).
-    // On success the provider unwraps the ``{"bundle": "..."}`` response
-    // envelope to a bare hash string, then we feed that to
-    // ``getEvaluatedAccountV2`` for the account fetch. The provider's
-    // V2 fetch dual-populates ``_accountV2`` and ``_asaData`` via the
-    // ``v2ToV1ASAModel`` shim, so unmigrated tab screens that still
-    // read from ``asaModel`` continue to render correctly.
+    // Phase 5d — V2 bundle resolution. The V1 ``getAsaAddress({raw: ...})``
+    // → ``getAsaData(bundleHash)`` two-step is replaced with the V2
+    // equivalents. V2's ``getBundleHashV2`` takes the raw address text
+    // directly (no wrapping dict) and the backend handles comma-
+    // separated lists / NFD names without the v1 "Multiple:" disambig
+    // step, so the ANS/NFD selector UI below is effectively unreachable
+    // under V2 — kept in place defensively in case the backend ever
+    // returns a multi-resolution error.
     ResponseModel responseAddress =
         await _asaProvider.getBundleHashV2(_asaProvider.address.toString());
     showEasyLoader(_asaProvider.isLoading);
-    // ``Multiple:`` is a V1 backend-specific signal for "address belongs
-    // to multiple bundles". V2 does not produce this message today, so
-    // the branch below is effectively a no-op under V2; keep it in
-    // place in case V2 ever grows a similar signal.
-    if (responseAddress.message.startsWith("Multiple:")) {
-      isMultipleAlgo = true;
-      setState(() {});
-    } else {
-      if (responseAddress.isSuccess) {
-        ResponseModel response =
-            await _asaProvider.getEvaluatedAccountV2(responseAddress.data);
-        isMultipleAlgo = false;
-        if (response.isSuccess) {
-          _menuProvider.setIndex(9);
-        }
-      } else {
-        setState(() {});
+    if (responseAddress.isSuccess) {
+      ResponseModel response =
+          await _asaProvider.getEvaluatedAccountV2(responseAddress.data);
+      isMultipleAlgo = false;
+      if (response.isSuccess) {
+        _menuProvider.setIndex(9);
       }
+    } else {
+      setState(() {});
     }
   }
 

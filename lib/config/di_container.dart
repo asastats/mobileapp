@@ -18,7 +18,7 @@ Future<void> init() async {
   // For API AND FIREBASE
 
   //? Core
-  sl.registerLazySingleton(() => DioClient(APIConstants.BASE_URL, sl(),
+  sl.registerLazySingleton(() => DioClient(APIConstants.BASE_URL_V2, sl(),
       loggingInterceptor: sl(), sharedPreferences: sl()));
 
   //? Repository

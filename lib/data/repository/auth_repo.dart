@@ -19,42 +19,13 @@ class ASArepo {
     required this.sharedPreferences,
   });
 
-  Future<ApiResponse> getAsaAddress(Map<String, dynamic> data) async {
-    try {
-      Response response = await dioClient.post(
-        APIConstants.BASE_URL,
-        data: data, // data
-      );
-      return ApiResponse.withSuccess(response);
-    } catch (e) {
-      print("error --> $e");
-      return ApiResponse.withError(ApiErrorHandler.getMessage(e));
-    }
-  }
-
-  Future<ApiResponse> getAsaData(String address) async {
-    try {
-      Response response = await dioClient.get(
-        APIConstants.BASE_URL + address,
-      );
-      return ApiResponse.withSuccess(response);
-    } catch (e) {
-      print("error --> $e");
-      return ApiResponse.withError(ApiErrorHandler.getMessage(e));
-    }
-  }
-
-  Future<ApiResponse> getGlobalSetting() async {
-    try {
-      Response response = await dioClient.get(
-        APIConstants.GLOBAL_SETTING_URL,
-      );
-      return ApiResponse.withSuccess(response);
-    } catch (e) {
-      print("error --> $e");
-      return ApiResponse.withError(ApiErrorHandler.getMessage(e));
-    }
-  }
+  // # V1 API methods removed in Phase 5d
+  //
+  // ``getAsaAddress``, ``getAsaData``, and ``getGlobalSetting`` previously
+  // hit the V1 ``BASE_URL`` and ``GLOBAL_SETTING_URL`` endpoints. Their
+  // V2 replacements (``getBundleHashV2``, ``getEvaluatedAccountV2``,
+  // ``getGlobalSettingV2``) below use ``BASE_URL_V2`` and
+  // ``SETTINGS_URL_V2``.
 
   // -- API V2 ----------------------------------------------------------
   //

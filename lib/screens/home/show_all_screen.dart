@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:convert';
 
 import 'package:asa_stats/config/app_constants.dart';
 import 'package:asa_stats/config/color.dart';
@@ -9,7 +8,6 @@ import 'package:asa_stats/config/enums.dart';
 import 'package:asa_stats/config/extensions.dart';
 import 'package:asa_stats/config/hex_color.dart';
 import 'package:asa_stats/data/repository/app_setting_repo.dart';
-import 'package:asa_stats/models/response/asa_model.dart';
 import 'package:asa_stats/models/response/base/response_model.dart';
 import 'package:asa_stats/models/v2/v2.dart' as v2;
 import 'package:asa_stats/providers/app_setting_provider.dart';
@@ -36,9 +34,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/body/chart_data_model.dart';
-import '../../models/response/nftValues.dart';
-import '../../models/response/notEval.dart';
-import '../../models/response/values.dart';
 import '../../providers/asa_provider.dart';
 import '../../widgets/home/nft_list_tile.dart';
 import 'package:asa_stats/screens/menu/menu_screen.dart' show launchURLApp;
@@ -64,7 +59,6 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
 
   String selectedLabel = "";
   String asaId = "";
-  String asaResponse = "";
 
   Map<String, dynamic> asaColors = {};
   List<ChartData> chartData = [];
@@ -76,10 +70,6 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
 
   //timer
   Timer? timer;
-
-  // ASA
-  ASAModel asaModel = ASAModel();
-  ASAModel originalAsaData = ASAModel();
 
   // Phase 5c-3 / 5d — V2 state. Top-level info, totals, list counts,
   // and chart data are all read from ``accountV2``. Per-row drill data
@@ -133,11 +123,9 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           _asaProvider.accountV2.notevals.isEmpty) {
         _asaProvider.address = _asaProvider.getAddress().first;
         showEasyLoader(true);
-        // Phase 5c — address lookup + account fetch migrated to V2.
-        // The provider dual-populates V1 state via the v2ToV1ASAModel
-        // shim, so this screen's existing references to ``asaModel``
-        // (built from ``_asaData``) keep working until the screen
-        // itself migrates to read ``accountV2`` in a later sub-phase.
+        // Phase 5c-5d — address lookup + account fetch fully on V2;
+        // the dual-population shim is gone, all reads route through
+        // ``accountV2``.
         ResponseModel response = await _asaProvider
             .getBundleHashV2(_asaProvider.getAddress().first);
         ResponseModel responseData =
@@ -653,16 +641,12 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   }
 
   Future updateASAdata() async {
-    asaResponse = _asaProvider.getResponse();
     if (widget.isSingleAddress) {
-      asaModel = _asaProvider.asaModelSingle.copyWith();
       accountV2 = _asaProvider.accountV2Single ?? v2.EvaluatedAccount();
     } else {
-      asaModel = _asaProvider.asaModel.copyWith();
       accountV2 = _asaProvider.accountV2;
     }
     chartData.clear();
-    originalAsaData = asaModel.copyWith();
 
     // Phase 5d — filtered lists start as the full V2 lists. The search
     // box (``_searchData``) narrows them; an empty search box keeps them
@@ -671,14 +655,13 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
     _filteredNftCollections = accountV2.nftcollections;
     _filteredNotevals = accountV2.notevals;
 
-    // Phase 5c-3 / B8 — chart data is now computed inline from the V2
-    // model instead of read from the pre-built ``asaModel.ratioChart`` /
-    // ``asaChart`` / ``nftChart`` (the shim leaves those null per design).
+    // Phase 5c-3 / B8 — chart data is computed inline from the V2 model.
     // For ``CategoryType.all`` this is the 3-segment ALGO/ASA/NFT pie
-    // matching the v1 backend's _ratio_chart_data() output. The two
-    // other branches stay null-safe so unmigrated tabs that instantiate
-    // this widget with a different type don't crash — Phase 5c-4 / 5c-5
-    // will rewrite the asa/nft per-item charts in their own screens.
+    // matching the v1 backend's _ratio_chart_data() output 1:1. The
+    // ASA and NFT category branches get the per-asset charts via
+    // ``buildAsaChartData`` and ``buildNftChartData`` in their own
+    // screens (asa_screen.dart, nft_screen.dart) — show_all only
+    // produces the ratio chart.
     chartData.addAll(buildRatioChartData(accountV2, widget.type));
 
     asaColors = await AppConstants.readGlobalJsonFile(context);
@@ -711,9 +694,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   void _searchData(String searchText, CategoryType type) async {
     // Phase 5d — search filters the V2 lists directly via the provider's
     // V2 search functions. Empty search restores the full lists from
-    // ``accountV2``. The v1 ``asaModel`` is no longer touched; that
-    // field is kept around purely as a wire-format cache (asaResponse)
-    // until 5d-2 removes it entirely.
+    // ``accountV2``.
     if (searchText.isEmpty) {
       setState(() {
         _filteredAsaitems = accountV2.asaitems;
@@ -848,10 +829,6 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
     final lookupAddress = widget.isSingleAddress
         ? _asaProvider.singleAddress.toString()
         : _asaProvider.address.toString();
-    // Note: V1 ``getAsaAddress`` had an ``isSingle`` parameter that the
-    // V1 implementation actually ignored; V2 ``getBundleHashV2`` doesn't
-    // take it (the bundle hash is identical regardless). The flag is
-    // only meaningful on the account-fetch step.
     ResponseModel responseAddress =
         await _asaProvider.getBundleHashV2(lookupAddress);
     if (responseAddress.isSuccess) {
@@ -859,12 +836,11 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           responseAddress.data,
           isSingle: widget.isSingleAddress);
       if (responseData.isSuccess) {
-        // Pre-existing V1 quirk: the original called getAsaData twice
-        // here for unclear reasons. Preserved bit-for-bit to avoid
-        // introducing behavior changes in this transition; the
-        // duplicate fetch is a Phase 5d / general-cleanup candidate.
-        await _asaProvider.getEvaluatedAccountV2(responseAddress.data,
-            isSingle: widget.isSingleAddress);
+        // Phase 5d cleanup — the previous version called the account
+        // fetch a second time here, faithfully preserving a V1 quirk
+        // whose origin we couldn't identify. With the V1 path gone
+        // there's no behavioural reason to keep it, and one fetch is
+        // demonstrably enough for the screen to render correctly.
         await updateASAdata();
       }
     }

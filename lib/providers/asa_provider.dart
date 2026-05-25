@@ -5,20 +5,12 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import '../data/datasource/repository/base/api_response.dart';
 import '../data/repository/auth_repo.dart';
-import '../models/response/asa_model.dart';
 import '../models/response/base/response_model.dart';
-import '../models/response/nftValues.dart';
-import '../models/response/notEval.dart';
-import '../models/response/values.dart';
 import '../models/v2/v2.dart' as v2;
-import '../models/v2_to_v1.dart';
 import '../utility/toast_service.dart';
-import 'package:asa_stats/config/extensions.dart';
 
 class ASAProvider with ChangeNotifier {
   final ASArepo asaRepo;
-  ASAModel _asaData = ASAModel();
-  late ASAModel _asaDataSingle;
   String _address = "";
   String _singleAddress = "";
   String _bundleHash = '';
@@ -26,8 +18,6 @@ class ASAProvider with ChangeNotifier {
   bool _isCaching = true;
   Map<String, Widget> _imageProviders = {};
 
-  ASAModel get asaModel => _asaData.copyWith();
-  ASAModel get asaModelSingle => _asaDataSingle;
   String get address => _address;
   String get singleAddress => _singleAddress;
   String get bundleHash => _bundleHash;
@@ -40,13 +30,13 @@ class ASAProvider with ChangeNotifier {
   set imageProviders(_) => _imageProviders = _;
   set isCaching(_) => _isCaching = _;
 
-  // -- V2 state -------------------------------------------------------
+  // # V2 state -----------------------------------------------------------
   //
-  // Distinct backing fields from the V1 _asaData / _asaDataSingle.
-  // Screens are migrated incrementally (Phase 5c) — every widget that
-  // hasn't switched yet keeps reading from _asaData; widgets that have
-  // switched read from _accountV2. When all are migrated, the V1 state
-  // and methods get deleted (Phase 5d).
+  // ``_accountV2`` holds the parsed V2 ``EvaluatedAccount`` for the
+  // primary (bundle) view. ``_accountV2Single`` holds the same shape for
+  // the single-address drill (the small-screen "show me just this one
+  // address" mode). Phase 5d collapsed the previous dual V1+V2 setup —
+  // V1 state, the shim, and the v1 model imports are gone.
   v2.EvaluatedAccount _accountV2 = v2.EvaluatedAccount();
   v2.EvaluatedAccount? _accountV2Single;
 
@@ -57,11 +47,10 @@ class ASAProvider with ChangeNotifier {
 
   // -- V2 API calls ---------------------------------------------------
 
-  /// POST raw address text and receive the bundle hash. Replaces the V1
-  /// ``getAsaAddress({"raw": ...})`` call. Returns a ``ResponseModel``
-  /// whose ``data`` is the bundle-hash string (unpacked from the
-  /// ``{"bundle": "..."}`` JSON envelope), so existing callers that pass
-  /// the result into the next API call don't need to change shape.
+  /// POST raw address text and receive the bundle hash. Returns a
+  /// ``ResponseModel`` whose ``data`` is the bundle-hash string
+  /// (unpacked from the ``{"bundle": "..."}`` JSON envelope) so the
+  /// caller can pass it directly into ``getEvaluatedAccountV2``.
   Future<ResponseModel> getBundleHashV2(String addresses) async {
     notifyListeners();
     _isLoading = true;
@@ -100,18 +89,11 @@ class ASAProvider with ChangeNotifier {
   }
 
   /// GET a full evaluated account by address / bundle / NFD name.
-  /// Replaces the V1 ``getAsaData(address)`` call.
   ///
   /// On success, the parsed ``EvaluatedAccount`` is stashed in
   /// ``_accountV2`` (or ``_accountV2Single`` when ``isSingle: true``).
   /// On parse failure, sets a failure ``ResponseModel`` but leaves the
   /// previous state untouched so a partial outage doesn't blank the UI.
-  ///
-  /// During the Phase 5c transition, ``_asaData`` / ``_asaDataSingle``
-  /// are ALSO populated via the ``v2ToV1ASAModel`` shim so screens that
-  /// haven't been migrated to read V2 directly keep working. Once every
-  /// screen reads from ``_accountV2``, Phase 5d removes the dual write
-  /// and the shim file.
   Future<ResponseModel> getEvaluatedAccountV2(String addressOrBundle,
       {bool isSingle = false}) async {
     _isLoading = true;
@@ -131,16 +113,10 @@ class ASAProvider with ChangeNotifier {
               ? raw
               : Map<String, dynamic>.from(raw as Map),
         );
-        // Build the V1 shape from the same parsed V2 model. The shim is
-        // a pure function — if it ever throws the V2 state is still
-        // written below, so the V2-reading screens stay correct.
-        final v1Shim = v2ToV1ASAModel(parsed);
         if (isSingle) {
           _accountV2Single = parsed;
-          _asaDataSingle = v1Shim;
         } else {
           _accountV2 = parsed;
-          _asaData = v1Shim;
         }
         responseModel = ResponseModel(
             true, "OK", apiResponse.response?.data);
@@ -183,283 +159,20 @@ class ASAProvider with ChangeNotifier {
     return responseModel;
   }
 
-  // -- V1 API calls (retained until Phase 5d) -------------------------
+  // # V1 API methods removed in Phase 5d
+  //
+  // ``getAsaAddress``, ``getAsaData``, and ``getGlobalSetting`` previously
+  // lived here, calling the deprecated v1 URLs. Their V2 replacements are
+  // ``getBundleHashV2``, ``getEvaluatedAccountV2``, and
+  // ``getGlobalSettingV2`` above.
 
-  Future<ResponseModel> getAsaAddress(Map<String, dynamic> data,
-      {bool isSingle = false}) async {
-    notifyListeners();
-    ResponseModel responseModel;
-    _isLoading = true;
-    ApiResponse apiRegisterResponse = await asaRepo.getAsaAddress(data);
-    if (apiRegisterResponse.response != null &&
-        apiRegisterResponse.response!.statusCode == 200) {
-      _bundleHash = apiRegisterResponse.response!.data.toString();
-      responseModel = ResponseModel(
-          true,
-          apiRegisterResponse.response?.data.toString() ?? "Empty Data",
-          apiRegisterResponse.response?.data);
-    } else {
-      responseModel = ResponseModel(false, apiRegisterResponse.error, null);
-      ToastService.show(responseModel.message, toastLength: Toast.LENGTH_LONG);
-    }
-    _isLoading = false;
-    notifyListeners();
-    return responseModel;
-  }
+  // # V1 search functions removed in Phase 5d
+  //
+  // ``searchAsa``, ``searchNFT``, and ``searchNotEval`` (each ~50 lines
+  // of nested ``element.toJson().containsElement(searchText)`` chains)
+  // previously lived here. Their V2 replacements are below; same
+  // semantics, ~5 lines each, JSON-stringify against the v2 model.
 
-  Future<ResponseModel> getAsaData(String data, {bool isSingle = false}) async {
-    ResponseModel responseModel;
-    _isLoading = true;
-    notifyListeners();
-    ApiResponse apiRegisterResponse = await asaRepo.getAsaData(data);
-    if (apiRegisterResponse.response != null &&
-        apiRegisterResponse.response!.statusCode == 200) {
-      saveResponse(jsonEncode(apiRegisterResponse.response?.data));
-      try {
-        if (isSingle) {
-          _asaDataSingle =
-              ASAModel.fromJson(apiRegisterResponse.response?.data ?? {});
-        } else {
-          _asaData =
-              ASAModel.fromJson(apiRegisterResponse.response?.data ?? {});
-        }
-        responseModel = ResponseModel(
-            true,
-            apiRegisterResponse.response?.data.toString() ?? "Empty Data",
-            apiRegisterResponse.response?.data);
-      } catch (e) {
-        debugPrint("Unable to parse API response" + e.toString());
-        responseModel = ResponseModel(false, "Unable to parse API response",
-            apiRegisterResponse.response?.data);
-      }
-    } else {
-      responseModel = ResponseModel(false, apiRegisterResponse.error, null);
-    }
-    if (!responseModel.isSuccess) {
-      ToastService.show(responseModel.message, toastLength: Toast.LENGTH_LONG);
-    }
-    _isLoading = false;
-    notifyListeners();
-    return responseModel;
-  }
-
-  Future<ResponseModel> getGlobalSetting() async {
-    // notifyListeners();
-    ResponseModel responseModel;
-    _isLoading = true;
-    ApiResponse apiRegisterResponse = await asaRepo.getGlobalSetting();
-    if (apiRegisterResponse.response != null &&
-        apiRegisterResponse.response!.statusCode == 200) {
-      print("api response --> ${apiRegisterResponse.response?.data}");
-      await setGlobalSetting(
-          jsonEncode(apiRegisterResponse.response?.data ?? {}));
-      responseModel = ResponseModel(
-          true,
-          apiRegisterResponse.response?.data.toString() ?? "Empty Data",
-          apiRegisterResponse.response?.data);
-    } else {
-      responseModel = ResponseModel(false, apiRegisterResponse.error, null);
-      ToastService.show(responseModel.message, toastLength: Toast.LENGTH_LONG);
-    }
-    _isLoading = false;
-    notifyListeners();
-    return responseModel;
-  }
-
-  List<Values>? searchAsa(String searchText, ASAModel asaModel) {
-    ASAModel temp = asaModel.copyWith();
-    temp.values = temp.values
-            ?.where((element) =>
-                // basic properties search
-                element.toJson().containsElement(searchText) ||
-                // ASA Details search
-                (element.asa?.toJson().containsElement(searchText) ?? false) ||
-                (element.asa?.links?.asMap().containsElement(searchText) ??
-                    false) ||
-                // Dapps Details search
-                (element.dapps
-                        ?.where((element) =>
-                            // basic dapps properties search
-                            (element.toJson().containsElement(searchText)) ||
-                            // distribution properties search
-                            (element.distribution
-                                    ?.where((element) => element
-                                        .toJson()
-                                        .containsElement(searchText))
-                                    .toList()
-                                    .isNotEmpty ??
-                                false) ||
-                            // staking list search
-                            (element.staking
-                                    ?.asMap()
-                                    .containsElement(searchText) ??
-                                false) ||
-                            // entries properties search
-                            (element.entries?.amount
-                                    ?.toJson()
-                                    .containsElement(searchText) ??
-                                false) ||
-                            (element.entries?.links
-                                    ?.asMap()
-                                    .containsElement(searchText) ??
-                                false) ||
-                            (element.entries?.price
-                                    ?.toJson()
-                                    .containsElement(searchText) ??
-                                false) ||
-                            (element.entries?.value
-                                    ?.toJson()
-                                    .containsElement(searchText) ??
-                                false))
-                        .toList()
-                        .isNotEmpty ??
-                    false))
-            .toList() ??
-        [];
-
-    return temp.values;
-  }
-
-  List<NftValues>? searchNFT(String searchText, ASAModel asaModel) {
-    ASAModel temp = asaModel.copyWith();
-    temp.nftValues = temp.nftValues
-            ?.where((element) =>
-                // basic details search
-                element.toJson().containsElement(searchText) ||
-                (element.nfts
-                        ?.where((element) =>
-                            element.toJson().containsElement(searchText) ||
-                            (element.nft
-                                    ?.toJson()
-                                    .containsElement(searchText) ??
-                                false) ||
-                            (element.nft?.urls?.containsElement(searchText) ??
-                                false) ||
-                            (element.nft?.listed?.any((l) =>
-                                    l.toJson().containsElement(searchText)) ??
-                                false) ||
-                            (element.nft?.last
-                                    ?.toJson()
-                                    .containsElement(searchText) ??
-                                false) ||
-                            (element.nft?.max
-                                    ?.toJson()
-                                    .containsElement(searchText) ??
-                                false) ||
-                            (element.nft?.floor
-                                    ?.toJson()
-                                    .containsElement(searchText) ??
-                                false) ||
-                            (element.nft?.attrs?.containsElement(searchText) ??
-                                false))
-                        .toList()
-                        .isNotEmpty ??
-                    false))
-            .toList() ??
-        [];
-
-    temp.nftValues?.forEach((element) {
-      element.nfts?.retainWhere((element) =>
-          (element.value?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (element.id?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (element.amount?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (element.nft?.id?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (element.nft?.name?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (element.nft?.unit?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (element.nft?.total?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (element.nft?.collection
-                  ?.toString()
-                  .toLowerCase()
-                  .contains(searchText) ??
-              false) ||
-          (element.nft?.urls?.containsElement(searchText) ?? false) ||
-          (element.nft?.listed?.any((l) =>
-                  l.toJson().containsElement(searchText)) ??
-              false) ||
-          (element.nft?.last?.toJson().containsElement(searchText) ?? false) ||
-          (element.nft?.max?.toJson().containsElement(searchText) ?? false) ||
-          (element.nft?.floor?.toJson().containsElement(searchText) ?? false) ||
-          (element.nft?.title
-                  ?.toString()
-                  .toLowerCase()
-                  .contains(searchText) ??
-              false) ||
-          (element.nft?.desc
-                  ?.toString()
-                  .toLowerCase()
-                  .contains(searchText) ??
-              false) ||
-          (element.nft?.attrs?.containsElement(searchText) ?? false) ||
-          (element.price?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (element.creator?.toString().toLowerCase().contains(searchText) ??
-              false));
-    });
-
-    return temp.nftValues;
-  }
-
-  List<NotEval>? searchNotEval(String searchText, ASAModel asaModel) {
-    ASAModel temp = asaModel.copyWith();
-    temp.notEval = temp.notEval
-            ?.where((element) =>
-                (element.asa?.name?.toLowerCase() ?? "")
-                    .contains(searchText.toLowerCase()) ||
-                (element.asa?.id?.toString().toLowerCase().contains(searchText) ??
-                    false) ||
-                (element.asa?.total?.toString().toLowerCase().contains(searchText) ??
-                    false) ||
-                (element.asa?.unit?.toString().toLowerCase().contains(searchText) ??
-                    false) ||
-                (element.price?.toString().toLowerCase().contains(searchText) ??
-                    false) ||
-                (element.value?.toString().toLowerCase().contains(searchText) ??
-                    false) ||
-                (element.dapps
-                        ?.where((element) =>
-                            element.address.toString().toLowerCase().contains(searchText) ||
-                            element.amount
-                                .toString()
-                                .toLowerCase()
-                                .contains(searchText) ||
-                            element.appId
-                                .toString()
-                                .toLowerCase()
-                                .contains(searchText) ||
-                            element.available
-                                .toString()
-                                .toLowerCase()
-                                .contains(searchText) ||
-                            element.dapp.toString().toLowerCase().contains(searchText) ||
-                            (element.entries?.amount?.toString().toLowerCase().contains(searchText) ?? false) ||
-                            (element.entries?.price?.toString().toLowerCase().contains(searchText) ?? false) ||
-                            (element.entries?.value?.text?.toString().toLowerCase().contains(searchText) ?? false) ||
-                            (element.entries?.value?.linktext?.toString().toLowerCase().contains(searchText) ?? false) ||
-                            (element.entries?.value?.title?.toString().toLowerCase().contains(searchText) ?? false) ||
-                            (element.entries?.value?.value?.toString().toLowerCase().contains(searchText) ?? false) ||
-                            element.name.toString().toLowerCase().contains(searchText) ||
-                            element.next.toString().toLowerCase().contains(searchText) ||
-                            element.price.toString().toLowerCase().contains(searchText) ||
-                            element.proxy.toString().toLowerCase().contains(searchText) ||
-                            element.reward.toString().toLowerCase().contains(searchText) ||
-                            element.value.toString().toLowerCase().contains(searchText) ||
-                            (element.staking?.contains(searchText) ?? false) ||
-                            (element.distribution?.where((element) => element.link.toString().toLowerCase().contains(searchText) || element.link.toString().toLowerCase().contains(searchText) || element.price.toString().toLowerCase().contains(searchText) || element.value.toString().toLowerCase().contains(searchText)).toList().isNotEmpty ?? false))
-                        .toList()
-                        .isNotEmpty ??
-                    false))
-            .toList() ??
-        [];
-
-    return temp.notEval;
-  }
 
   // # Phase 5d — V2 search functions ----------------------------------
   //
@@ -573,26 +286,13 @@ class ASAProvider with ChangeNotifier {
   }
 
   void clear() {
-    // Reset V2 first, then V1. The legacy ``ASAModel.fromJson({})`` calls
-    // below crash on empty input (the v1 model dereferences
-    // ``json['addresses'].cast<String>()`` without null-checking), but
-    // we depend on those calls remaining in place until Phase 5d retires
-    // the v1 model entirely. Resetting V2 first ensures the V2 slots are
-    // wiped even if the V1 reset throws. Wrap the V1 reset in a try
-    // block so a stale ``_asaData``/``_asaDataSingle`` from the previous
-    // session doesn't survive — the catch is a no-op because the throw
-    // happens before the assignment, leaving the existing _asaData in
-    // place, which is preferable to propagating an exception out of
-    // clear() and crashing whatever called it.
+    // Phase 5d simplification — the V1 ``ASAModel.fromJson({})`` calls
+    // that used to live here crashed on empty input (a pre-existing
+    // null-deref in the v1 model), so this had to be wrapped in a
+    // try/catch. With the v1 model gone, clear() is just two assignments
+    // to the V2 slots.
     _accountV2 = v2.EvaluatedAccount();
     _accountV2Single = null;
-    try {
-      _asaData = ASAModel.fromJson({});
-      _asaDataSingle = ASAModel.fromJson({});
-    } on NoSuchMethodError {
-      // Pre-existing v1 fragility — see comment above. Phase 5d cleanup
-      // removes the offending lines along with the v1 model.
-    }
     notifyListeners();
   }
 }

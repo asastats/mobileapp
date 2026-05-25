@@ -82,22 +82,24 @@ class _ChartState extends State<Chart> {
   void _handleSectionSelected(BuildContext context, String label, int index) {
     final parentScreenState = widget.categoryScreenState;
     String selectedAssetId = label;
+    // Phase 5d — resolve the tapped pie segment to an asset/collection
+    // id by scanning the V2 ``accountV2`` lists. The chart's segments
+    // are labeled with the asset's unit (asa) or the collection name
+    // (nft); the screen needs the asset id (asa) or the name string
+    // (nft) to set up the row scroll target.
+    final accountV2 = parentScreenState.accountV2;
     if (widget.type == CategoryType.asa) {
-      if (parentScreenState.asaModel.values != null) {
-        for (var value in parentScreenState.asaModel.values!) {
-          if (value.asa?.unit == label) {
-            selectedAssetId = value.asa?.id.toString() ?? label;
-            break;
-          }
+      for (final item in accountV2.asaitems) {
+        if (item.asset?.unit == label) {
+          selectedAssetId = item.asset?.id?.toString() ?? label;
+          break;
         }
       }
     } else if (widget.type == CategoryType.nft) {
-      if (parentScreenState.asaModel.nftValues != null) {
-        for (var value in parentScreenState.asaModel.nftValues!) {
-          if (value.collection == label) {
-            selectedAssetId = value.collection.toString();
-            break;
-          }
+      for (final coll in accountV2.nftcollections) {
+        if (coll.name == label) {
+          selectedAssetId = coll.name.toString();
+          break;
         }
       }
     }

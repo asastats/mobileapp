@@ -292,8 +292,8 @@ void main() {
       expect(provider.accountV2.asaitems, isNotEmpty);
       expect(provider.accountV2Single, isNotNull);
 
-      // clear() resets V2 first (then attempts V1, swallowing the
-      // pre-existing v1 ``ASAModel.fromJson({})`` crash internally).
+      // clear() resets V2 fields. Phase 5d removed the v1 reset
+      // that used to need try/catch protection.
       provider.clear();
 
       expect(provider.accountV2.asaitems, isEmpty);

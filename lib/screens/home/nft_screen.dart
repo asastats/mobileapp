@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:asa_stats/config/app_constants.dart';
 import 'package:asa_stats/config/color.dart';
@@ -8,7 +7,6 @@ import 'package:asa_stats/config/enums.dart';
 import 'package:asa_stats/config/extensions.dart';
 import 'package:asa_stats/config/hex_color.dart';
 import 'package:asa_stats/data/repository/app_setting_repo.dart';
-import 'package:asa_stats/models/response/asa_model.dart';
 import 'package:asa_stats/models/v2/v2.dart' as v2;
 import 'package:asa_stats/screens/chart_helpers.dart';
 import 'package:asa_stats/widgets/home/amountHeader.dart';
@@ -57,7 +55,6 @@ class _NftScreenState extends State<NftScreen> {
 
   String selectedLabel = "";
   String asaId = "";
-  String asaResponse = "";
 
   Map<String, dynamic> asaColors = {};
   List<ChartData> chartData = [];
@@ -69,12 +66,6 @@ class _NftScreenState extends State<NftScreen> {
 
   //timer
   Timer? timer;
-
-  // ASA — V1 state still populated by the provider's dual-population
-  // shim. Search keeps using it (``_asaProvider.searchNFT`` works on
-  // v1 shapes). Renders read from ``accountV2``.
-  ASAModel asaModel = ASAModel();
-  ASAModel originalAsaData = ASAModel();
 
   // Phase 5c-5 / 5d — V2 state. ``accountV2.nftcollections`` is the
   // source of truth for the NFT list-tile rows. The filtered list
@@ -398,16 +389,12 @@ class _NftScreenState extends State<NftScreen> {
   }
 
   Future updateASAdata() async {
-    asaResponse = _asaProvider.getResponse();
     if (widget.isSingleAddress) {
-      asaModel = _asaProvider.asaModelSingle.copyWith();
       accountV2 = _asaProvider.accountV2Single ?? v2.EvaluatedAccount();
     } else {
-      asaModel = _asaProvider.asaModel.copyWith();
       accountV2 = _asaProvider.accountV2;
     }
     chartData.clear();
-    originalAsaData = asaModel.copyWith();
 
     // Phase 5d — initialize the filtered list from the full V2 list.
     _filteredNftCollections = accountV2.nftcollections;

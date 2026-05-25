@@ -29,12 +29,16 @@ class _MessageState extends State<Message> {
 
   @override
   Widget build(BuildContext context) {
+    // Phase 5d — read from V2's ``systemInfo`` instead of the deleted
+    // v1 ``asaModel``. Both ``warning`` and ``information`` map 1:1
+    // from the V1 fields the backend used to serialize at top level.
+    final systemInfo = _asaProvider.accountV2.systemInfo;
     return Padding(
       padding: const EdgeInsets.only(top: 5),
       child: Text(
         widget.type == messageType.message
-            ? _asaProvider.asaModel.warning ?? ""
-            : _asaProvider.asaModel.information ?? "",
+            ? systemInfo?.warning ?? ""
+            : systemInfo?.information ?? "",
         maxLines: 2,
         textAlign: TextAlign.center,
         style: TextStyle(
