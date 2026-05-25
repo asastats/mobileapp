@@ -81,14 +81,20 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   ASAModel asaModel = ASAModel();
   ASAModel originalAsaData = ASAModel();
 
-  // Phase 5c-3 — V2 state. Currently this screen reads top-level account
-  // info (addresses, online, warning, information, total), list counts,
-  // and chart data from ``_accountV2`` directly. Per-row drill data
-  // (values[i], nftValues[i], notEval[i] passed into AsaListTile /
-  // NftListTile / NotEvalListTile) still comes from ``asaModel`` because
-  // those widgets haven't been migrated yet (Phases 5c-4 / 5c-5). The
-  // dual-population shim in ASAProvider keeps both in sync.
+  // Phase 5c-3 / 5d — V2 state. Top-level info, totals, list counts,
+  // and chart data are all read from ``accountV2``. Per-row drill data
+  // is read from the filtered lists below, which are initialized from
+  // ``accountV2.*`` and narrowed by the search box.
   v2.EvaluatedAccount accountV2 = v2.EvaluatedAccount();
+
+  /// Filtered asaitems — the list the body iterates. Initialized to
+  /// the full ``accountV2.asaitems`` after each ``updateASAdata`` and
+  /// narrowed by ``_searchData`` when the user types in the search
+  /// box. Empty filtered list with non-empty search ⇒ "no matches"
+  /// (renders the empty-msg).
+  List<v2.AsaItem> _filteredAsaitems = const [];
+  List<v2.NftCollection> _filteredNftCollections = const [];
+  List<v2.NotEvaluatedItem> _filteredNotevals = const [];
 
   //provider
   late ASAProvider _asaProvider;
@@ -261,26 +267,25 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           ),
         ),
         if (widget.type == CategoryType.all)
-          emptyMsg(accountV2.nftcollections.isEmpty &&
-              accountV2.asaitems.isEmpty),
+          emptyMsg(_filteredNftCollections.isEmpty &&
+              _filteredAsaitems.isEmpty),
 
         //? ASA
         if (widget.type == CategoryType.all ||
             widget.type == CategoryType.asa) ...[
           if (widget.type == CategoryType.asa)
-            emptyMsg(accountV2.asaitems.isEmpty),
-          // Per-row drill (asaModel.values[i] passed into list tiles)
-          // stays on V1 until Phase 5c-4 migrates the tile widgets;
-          // ``asaModel.values?.length`` is equivalent to
-          // ``accountV2.asaitems.length`` via the shim. Using the V2
-          // count keeps the read surface consistent.
-          ..._sliverAsaList(accountV2.asaitems.length),
+            emptyMsg(_filteredAsaitems.isEmpty),
+          // Phase 5d — per-row drill iterates the filtered list.
+          // ``_filteredAsaitems == accountV2.asaitems`` when the search
+          // box is empty, so the empty-search behavior is identical to
+          // the pre-search-migration state.
+          ..._sliverAsaList(_filteredAsaitems.length),
         ],
 
         //? NFT
         ...[
           if (widget.type == CategoryType.all &&
-              accountV2.nftcollections.isNotEmpty)
+              _filteredNftCollections.isNotEmpty)
             SliverAppBar(
               toolbarHeight: 43,
               leadingWidth: 0,
@@ -295,14 +300,14 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           if (widget.type == CategoryType.nft ||
               widget.type == CategoryType.all) ...[
             if (widget.type == CategoryType.nft)
-              emptyMsg(accountV2.nftcollections.isEmpty),
-            ..._sliverNFTList(accountV2.nftcollections.length),
+              emptyMsg(_filteredNftCollections.isEmpty),
+            ..._sliverNFTList(_filteredNftCollections.length),
           ],
         ],
 
         //? Not Eval
         if (widget.type == CategoryType.all &&
-            accountV2.notevals.isNotEmpty) ...[
+            _filteredNotevals.isNotEmpty) ...[
           SliverAppBar(
             toolbarHeight: 43,
             leadingWidth: 0,
@@ -314,7 +319,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
               color: ColorResources.borderColor,
             ),
           ),
-          ..._sliverNotEvalList(accountV2.notevals.length),
+          ..._sliverNotEvalList(_filteredNotevals.length),
         ],
         SliverAppBar(
           automaticallyImplyLeading: false,
@@ -415,9 +420,9 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
 
   List<Widget> _sliverAsaList(int size) {
     var widgetList = <Widget>[];
-    // Compute the max asaitem value from V2 directly. Returns 0.0 when
-    // the list is empty (matches V1's `?? 0.0` fallback chain).
-    final values = accountV2.asaitems
+    // Compute the max asaitem value from the filtered list. Returns 0.0
+    // when the list is empty (matches V1's `?? 0.0` fallback chain).
+    final values = _filteredAsaitems
         .map((i) => i.value ?? 0.0)
         .toList(growable: false);
     final max =
@@ -430,9 +435,9 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                     points: "00"))
             .length;
     for (int index = 0; index < size; index++) {
-      // Phase 5d-prep — iterate V2 directly. Per-row color computed
-      // inline (palette[i % palette.length]) per A7.
-      final item = accountV2.asaitems[index];
+      // Phase 5d — iterate the filtered V2 list. Per-row color
+      // computed inline (palette[i % palette.length]) per A7.
+      final item = _filteredAsaitems[index];
       final assetIdStr = item.asset?.id?.toString() ?? '';
       final Map<String, dynamic> palette = asaColors['asa_colors'] is Map
           ? Map<String, dynamic>.from(asaColors['asa_colors'] as Map)
@@ -490,7 +495,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
         : <String, dynamic>{};
 
     for (int index = 0; index < size; index++) {
-      final coll = accountV2.nftcollections[index];
+      final coll = _filteredNftCollections[index];
       final collName = coll.name ?? '';
       final color = _paletteColor(palette, index);
       final length = coll.nfts.length;
@@ -524,7 +529,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
                 _appSettingProvider.setValue(true);
               }
               for (int i = 0; i < index; i++) {
-                final prev = accountV2.nftcollections[i];
+                final prev = _filteredNftCollections[i];
                 final prevImagesLen = prev.nfts.length;
                 final prevRowCount =
                     ((prevImagesLen + 1) / crossAxisCount).ceil();
@@ -537,7 +542,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
               }
               onListItemTap(
                   ((widget.type == CategoryType.all
-                              ? (accountV2.asaitems.length + 0.76)
+                              ? (_filteredAsaitems.length + 0.76)
                               : 0) +
                           index)
                       .toDouble(),
@@ -571,7 +576,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
     widgetList.add(SliverAppBar(
       title: NotEvalListTile(
         isExpanded: (asaId == "not evaluated"),
-        title: "${accountV2.notevals.length} not evaluated",
+        title: "${_filteredNotevals.length} not evaluated",
         onExpand: () {
           if (_asaProvider.isCaching) return;
           double nHeight = 0;
@@ -583,10 +588,10 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
           //List height count
           int crossAxisCount = countCrossAxisNFT(context);
           setState(() {});
-          // Per-item drill below: iterate V2 nftcollections; the
-          // measurement only needs counts, so no v1 reads.
-          for (int i = 0; i < accountV2.nftcollections.length; i++) {
-            final coll = accountV2.nftcollections[i];
+          // Use the filtered NFT collection list for the height calc;
+          // the measurement should match what's actually rendered.
+          for (int i = 0; i < _filteredNftCollections.length; i++) {
+            final coll = _filteredNftCollections[i];
             final imgCount = coll.nfts.length;
             final nftRowCount = ((imgCount + 1) / crossAxisCount).ceil();
             final collName = coll.name ?? '';
@@ -598,8 +603,8 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
             nHeight += height;
           }
           onListItemTap(
-              (accountV2.asaitems.length +
-                      accountV2.nftcollections.length)
+              (_filteredAsaitems.length +
+                      _filteredNftCollections.length)
                   .toDouble(),
               animate: asaId.isNotEmpty,
               nHeight: nHeight);
@@ -617,7 +622,7 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
       // parallel NotEvalListTileV2 — the user-visible difference is
       // ``showProviders: false`` (links are computed-value features
       // that don't apply to not-eval rows).
-      final noteval = accountV2.notevals[index];
+      final noteval = _filteredNotevals[index];
       final wrapped = v2.AsaItem(
         asset: noteval.asset,
         amount: noteval.amount,
@@ -659,6 +664,13 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
     chartData.clear();
     originalAsaData = asaModel.copyWith();
 
+    // Phase 5d — filtered lists start as the full V2 lists. The search
+    // box (``_searchData``) narrows them; an empty search box keeps them
+    // identical to the underlying ``accountV2.*`` lists.
+    _filteredAsaitems = accountV2.asaitems;
+    _filteredNftCollections = accountV2.nftcollections;
+    _filteredNotevals = accountV2.notevals;
+
     // Phase 5c-3 / B8 — chart data is now computed inline from the V2
     // model instead of read from the pre-built ``asaModel.ratioChart`` /
     // ``asaChart`` / ``nftChart`` (the shim leaves those null per design).
@@ -697,20 +709,34 @@ class _ShowAllScreenState extends State<ShowAllScreen> {
   }
 
   void _searchData(String searchText, CategoryType type) async {
-    asaModel = ASAModel.fromJson(jsonDecode(asaResponse));
-    setState(() {});
-    if (searchText.isNotEmpty) {
-      if (type == CategoryType.all) {
-        asaModel.values = _asaProvider.searchAsa(searchText, asaModel);
-        asaModel.nftValues = _asaProvider.searchNFT(searchText, asaModel);
-        asaModel.notEval = _asaProvider.searchNotEval(searchText, asaModel);
-      } else if (type == CategoryType.asa) {
-        asaModel.values = _asaProvider.searchAsa(searchText, asaModel);
-      } else if (type == CategoryType.nft) {
-        asaModel.nftValues = _asaProvider.searchNFT(searchText, asaModel);
-      }
-      setState(() {});
+    // Phase 5d — search filters the V2 lists directly via the provider's
+    // V2 search functions. Empty search restores the full lists from
+    // ``accountV2``. The v1 ``asaModel`` is no longer touched; that
+    // field is kept around purely as a wire-format cache (asaResponse)
+    // until 5d-2 removes it entirely.
+    if (searchText.isEmpty) {
+      setState(() {
+        _filteredAsaitems = accountV2.asaitems;
+        _filteredNftCollections = accountV2.nftcollections;
+        _filteredNotevals = accountV2.notevals;
+      });
+      return;
     }
+    if (type == CategoryType.all) {
+      _filteredAsaitems =
+          _asaProvider.searchAsaitemsV2(searchText, accountV2);
+      _filteredNftCollections =
+          _asaProvider.searchNftCollectionsV2(searchText, accountV2);
+      _filteredNotevals =
+          _asaProvider.searchNotevalsV2(searchText, accountV2);
+    } else if (type == CategoryType.asa) {
+      _filteredAsaitems =
+          _asaProvider.searchAsaitemsV2(searchText, accountV2);
+    } else if (type == CategoryType.nft) {
+      _filteredNftCollections =
+          _asaProvider.searchNftCollectionsV2(searchText, accountV2);
+    }
+    setState(() {});
   }
 
   void changeCurrency(bool val) {

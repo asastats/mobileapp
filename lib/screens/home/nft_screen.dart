@@ -76,9 +76,11 @@ class _NftScreenState extends State<NftScreen> {
   ASAModel asaModel = ASAModel();
   ASAModel originalAsaData = ASAModel();
 
-  // Phase 5c-5 — V2 state. ``accountV2.nftcollections`` is the source
-  // of truth for every NFT list-tile row in this screen.
+  // Phase 5c-5 / 5d — V2 state. ``accountV2.nftcollections`` is the
+  // source of truth for the NFT list-tile rows. The filtered list
+  // mirrors it and gets narrowed by the search box.
   v2.EvaluatedAccount accountV2 = v2.EvaluatedAccount();
+  List<v2.NftCollection> _filteredNftCollections = const [];
 
   //provider
   late ASAProvider _asaProvider;
@@ -196,8 +198,8 @@ class _NftScreenState extends State<NftScreen> {
                   EdgeInsets.only(top: Dimensions.PADDING_SIZE_15, bottom: 7.h),
               child: filterView()),
         ),
-        ..._sliverNFTList(accountV2.nftcollections.length),
-        if (accountV2.nftcollections.isEmpty) emptyMsg(),
+        ..._sliverNFTList(_filteredNftCollections.length),
+        if (_filteredNftCollections.isEmpty) emptyMsg(),
         SliverAppBar(
           automaticallyImplyLeading: false,
           titleSpacing: 0,
@@ -310,7 +312,7 @@ class _NftScreenState extends State<NftScreen> {
         : <String, dynamic>{};
 
     for (int index = 0; index < size; index++) {
-      final coll = accountV2.nftcollections[index];
+      final coll = _filteredNftCollections[index];
       final collName = coll.name ?? '';
       final color = _paletteColor(palette, index);
       final length = coll.nfts.length;
@@ -345,10 +347,10 @@ class _NftScreenState extends State<NftScreen> {
                 _appSettingProvider.setValue(true);
               }
               // Compute the scroll offset by summing the heights of
-              // every preceding collection row. The branching matches
-              // the v1 logic verbatim, just keyed off V2 fields.
+              // every preceding collection row. Reads the filtered
+              // list so the offset matches what's actually rendered.
               for (int i = 0; i < index; i++) {
-                final prev = accountV2.nftcollections[i];
+                final prev = _filteredNftCollections[i];
                 final prevImagesLen = prev.nfts.length;
                 final prevRowCount =
                     ((prevImagesLen + 1) / crossAxisCount).ceil();
@@ -407,6 +409,9 @@ class _NftScreenState extends State<NftScreen> {
     chartData.clear();
     originalAsaData = asaModel.copyWith();
 
+    // Phase 5d — initialize the filtered list from the full V2 list.
+    _filteredNftCollections = accountV2.nftcollections;
+
     // Phase 5c-5 / B8 — nft chart computed inline from accountV2 +
     // bundled palette.
     asaColors = await AppConstants.readGlobalJsonFile(context);
@@ -455,12 +460,17 @@ class _NftScreenState extends State<NftScreen> {
   }
 
   void _searchData(String searchText) async {
-    asaModel = ASAModel.fromJson(jsonDecode(asaResponse));
-    setState(() {});
-    if (searchText.isNotEmpty) {
-      asaModel.nftValues = _asaProvider.searchNFT(searchText, asaModel);
-      setState(() {});
+    // Phase 5d — V2 search via provider helper. Empty search restores
+    // the full list from ``accountV2``.
+    if (searchText.isEmpty) {
+      setState(() {
+        _filteredNftCollections = accountV2.nftcollections;
+      });
+      return;
     }
+    _filteredNftCollections =
+        _asaProvider.searchNftCollectionsV2(searchText, accountV2);
+    setState(() {});
   }
 
   void changeCurrency(bool val) {

@@ -72,9 +72,11 @@ class _AsaScreenState extends State<AsaScreen> {
   ASAModel asaModel = ASAModel();
   ASAModel originalAsaData = ASAModel();
 
-  // Phase 5c-4 — V2 state. ``accountV2.asaitems`` is the source of
-  // truth for every list-tile row in this screen.
+  // Phase 5c-4 / 5d — V2 state. ``accountV2.asaitems`` is the source
+  // of truth for the list-tile rows. The filtered list below mirrors
+  // ``accountV2.asaitems`` and gets narrowed by the search box.
   v2.EvaluatedAccount accountV2 = v2.EvaluatedAccount();
+  List<v2.AsaItem> _filteredAsaitems = const [];
 
   //provider
   late ASAProvider _asaProvider;
@@ -198,8 +200,8 @@ class _AsaScreenState extends State<AsaScreen> {
 
         //? ASA
         if (widget.type == CategoryType.asa)
-          emptyMsg(accountV2.asaitems.isEmpty),
-        ..._sliverAsaList(accountV2.asaitems.length),
+          emptyMsg(_filteredAsaitems.isEmpty),
+        ..._sliverAsaList(_filteredAsaitems.length),
 
         SliverAppBar(
           automaticallyImplyLeading: false,
@@ -305,9 +307,9 @@ class _AsaScreenState extends State<AsaScreen> {
 
   List<Widget> _sliverAsaList(int size) {
     var widgetList = <Widget>[];
-    // Max value across asaitems, used to size the right-tail width on
-    // each row's sticky header. Read from V2 directly.
-    final values = accountV2.asaitems
+    // Phase 5d — max value across the FILTERED asaitems. With an empty
+    // search this is the full list; with a search it's the visible subset.
+    final values = _filteredAsaitems
         .map((i) => i.value ?? 0.0)
         .toList(growable: false);
     final max = values.isEmpty ? 0.0 : values.reduce((a, b) => a > b ? a : b);
@@ -329,7 +331,7 @@ class _AsaScreenState extends State<AsaScreen> {
         : <String, dynamic>{};
 
     for (int index = 0; index < size; index++) {
-      final item = accountV2.asaitems[index];
+      final item = _filteredAsaitems[index];
       final assetIdStr = item.asset?.id?.toString() ?? '';
       final color = _paletteColor(palette, index);
 
@@ -407,6 +409,10 @@ class _AsaScreenState extends State<AsaScreen> {
     chartData.clear();
     originalAsaData = asaModel.copyWith();
 
+    // Phase 5d — initialize the filtered list from the full V2 list;
+    // the search box narrows it.
+    _filteredAsaitems = accountV2.asaitems;
+
     // Phase 5c-4 / B8 — asa chart computed inline from accountV2 +
     // bundled palette. Need to load the palette first since the chart
     // colors come from ``asa_colors``.
@@ -439,12 +445,16 @@ class _AsaScreenState extends State<AsaScreen> {
   }
 
   void _searchData(String searchText, CategoryType type) async {
-    asaModel = ASAModel.fromJson(jsonDecode(asaResponse));
-    setState(() {});
-    if (searchText.isNotEmpty) {
-      asaModel.values = _asaProvider.searchAsa(searchText, asaModel);
-      setState(() {});
+    // Phase 5d — V2 search via provider helper, writes the filtered
+    // asaitem list. Empty search restores the full list.
+    if (searchText.isEmpty) {
+      setState(() {
+        _filteredAsaitems = accountV2.asaitems;
+      });
+      return;
     }
+    _filteredAsaitems = _asaProvider.searchAsaitemsV2(searchText, accountV2);
+    setState(() {});
   }
 
   void changeCurrency(bool val) {

@@ -251,13 +251,23 @@ class _ASADataV2State extends State<ASADataV2> {
     // (Added, Locked, etc.) get the inverted form via the distribution
     // sub-rows, which already include the price line. Skipped for ALGO
     // itself ("1 ALGO/ALGO" is meaningless) and when price is 0/null.
+    //
+    // Phase 5c-fixes (round 4) — tap-to-toggle between ``ALGO/<unit>``
+    // and ``<unit>/ALGO`` forms. ``PriceLineToggle`` is stateful so
+    // the toggle state persists per row across rebuilds. Default form
+    // is ``ALGO/<unit>`` (matches the website's balance-row default).
     if (progType == 'Balance' &&
         !isAlgo &&
         (widget.item.price ?? 0.0) > 0 &&
         asaUnit.isNotEmpty) {
-      final price = widget.item.price!;
-      rows.add(_textRow(
-          '${AppConstants.formateNumber(price, points: '00000000')} ALGO/$asaUnit'));
+      rows.add(Padding(
+        padding: const EdgeInsets.only(top: 3),
+        child: PriceLineToggle(
+          price: widget.item.price!,
+          assetUnit: asaUnit,
+          defaultInverted: false,
+        ),
+      ));
     }
 
     return rows;
@@ -465,25 +475,90 @@ class DistributorWidgetV2 extends StatelessWidget {
             ),
           // Per-distribution price line. Phase 5c-fixes / M3 — mirrors
           // the website's ``<span class="price">`` row, e.g.
-          // "0.10966392 USDC/ALGO". The numeric value is
-          // ``1 / item.price``, formatted to 8 decimals; the unit is
-          // "<asset_unit>/ALGO". Skipped for ALGO itself (price line
-          // of 1 ALGO/ALGO is meaningless) and when price is null/zero.
+          // "0.10966392 USDC/ALGO". Default form is ``<unit>/ALGO``
+          // (inverted = 1/price); tap toggles to ``ALGO/<unit>``.
           if ((item.price ?? 0.0) > 0 &&
               asaUnit.isNotEmpty &&
               asaUnit != 'ALGO') ...[
             SizedBox(height: 4.h),
-            Text(
-              '${AppConstants.formateNumber(1.0 / item.price!, points: '00000000')} $asaUnit/ALGO',
-              style: TextStyle(
-                color: ColorResources.themeTextColor(context),
-                fontSize: Dimensions.FONT_SIZE_SMALL,
-                fontWeight: FontWeight.w600,
-                fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
-              ),
+            PriceLineToggle(
+              price: item.price!,
+              assetUnit: asaUnit,
+              defaultInverted: true,
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Tap-to-toggle price line — flips between ``<price> ALGO/<unit>`` and
+/// ``<1/price> <unit>/ALGO`` forms. Matches the website's interactive
+/// ``<span class="price">`` element which the user can click to invert.
+///
+/// Phase 5c-fixes (round 4) — replaces the static ``Text`` widgets that
+/// rendered the price line in ``_programSummaryRows`` (Balance row) and
+/// ``DistributorWidgetV2`` (distribution sub-row). ``defaultInverted``
+/// controls which form is shown initially (Balance row defaults to
+/// ``ALGO/<unit>`` non-inverted; distribution sub-rows default to
+/// ``<unit>/ALGO`` inverted, matching the website).
+class PriceLineToggle extends StatefulWidget {
+  /// Per-asset ALGO price (i.e. ``AsaItem.price``). Always strictly > 0.
+  final double price;
+
+  /// The asset's unit string (e.g. "USDC", "HAY"). Always non-empty.
+  final String assetUnit;
+
+  /// True ⇒ start in inverted form (``<unit>/ALGO``). False ⇒ start
+  /// in direct form (``ALGO/<unit>``).
+  final bool defaultInverted;
+
+  const PriceLineToggle({
+    super.key,
+    required this.price,
+    required this.assetUnit,
+    required this.defaultInverted,
+  });
+
+  @override
+  State<PriceLineToggle> createState() => _PriceLineToggleState();
+}
+
+class _PriceLineToggleState extends State<PriceLineToggle> {
+  late bool _inverted;
+
+  @override
+  void initState() {
+    super.initState();
+    _inverted = widget.defaultInverted;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // ``price`` is ALGO per 1 unit of asset.
+    // Direct  : <price> ALGO/<unit>  ("1 unit costs <price> ALGO")
+    // Inverted: <1/price> <unit>/ALGO  ("1 ALGO buys <1/price> units")
+    final value = _inverted ? (1.0 / widget.price) : widget.price;
+    final numerator = _inverted ? widget.assetUnit : 'ALGO';
+    final denominator = _inverted ? 'ALGO' : widget.assetUnit;
+    final text =
+        '${AppConstants.formateNumber(value, points: '00000000')} $numerator/$denominator';
+    return GestureDetector(
+      onTap: () => setState(() => _inverted = !_inverted),
+      // ``HitTestBehavior.opaque`` makes the entire row tappable, not
+      // just the painted text glyphs — the user can tap empty padding
+      // around the number too.
+      behavior: HitTestBehavior.opaque,
+      child: Text(
+        text,
+        textAlign: TextAlign.end,
+        style: TextStyle(
+          color: ColorResources.themeTextColor(context),
+          fontSize: Dimensions.FONT_SIZE_SMALL,
+          fontWeight: FontWeight.w600,
+          fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+        ),
       ),
     );
   }

@@ -461,6 +461,57 @@ class ASAProvider with ChangeNotifier {
     return temp.notEval;
   }
 
+  // # Phase 5d — V2 search functions ----------------------------------
+  //
+  // Operate on ``accountV2`` lists directly; no v1 shim involved. The
+  // implementation is "stringify-and-match" — serialize each item via
+  // ``toJson()`` and substring-match the lowercased JSON. This matches
+  // the v1 functions' behavior (which also did containsElement against
+  // toJson representations) but is far shorter and works against the
+  // v2 wire shape directly.
+  //
+  // Each function takes the search string and returns the filtered
+  // sub-list of the corresponding ``accountV2.*`` field. The caller is
+  // responsible for assigning the result to their local filtered-list
+  // state field; the provider doesn't mutate ``accountV2``.
+
+  /// Filter ``accountV2.asaitems`` by substring match (case-insensitive).
+  List<v2.AsaItem> searchAsaitemsV2(
+      String searchText, v2.EvaluatedAccount account) {
+    if (searchText.isEmpty) return account.asaitems;
+    final needle = searchText.toLowerCase();
+    return account.asaitems
+        .where((item) => jsonEncode(item.toJson()).toLowerCase().contains(needle))
+        .toList(growable: false);
+  }
+
+  /// Filter ``accountV2.nftcollections`` by substring match. Mirrors
+  /// the v1 ``searchNFT``: matches against the collection's own JSON
+  /// AND each NFT-item's JSON (so searching by NFT name/id matches
+  /// the parent collection).
+  List<v2.NftCollection> searchNftCollectionsV2(
+      String searchText, v2.EvaluatedAccount account) {
+    if (searchText.isEmpty) return account.nftcollections;
+    final needle = searchText.toLowerCase();
+    return account.nftcollections.where((coll) {
+      if (jsonEncode(coll.toJson()).toLowerCase().contains(needle)) return true;
+      // Collection-level JSON already includes nested NFT-item JSON via
+      // toJson(), so a second per-nft pass is redundant. Kept as a no-op
+      // here to make the parallel with v1 obvious.
+      return false;
+    }).toList(growable: false);
+  }
+
+  /// Filter ``accountV2.notevals`` by substring match.
+  List<v2.NotEvaluatedItem> searchNotevalsV2(
+      String searchText, v2.EvaluatedAccount account) {
+    if (searchText.isEmpty) return account.notevals;
+    final needle = searchText.toLowerCase();
+    return account.notevals
+        .where((item) => jsonEncode(item.toJson()).toLowerCase().contains(needle))
+        .toList(growable: false);
+  }
+
   Future<bool> saveAddress(String address) {
     return asaRepo.saveAddress(address);
   }
