@@ -35,7 +35,6 @@ import 'package:provider/provider.dart';
 
 import '../../models/body/chart_data_model.dart';
 import '../../providers/asa_provider.dart';
-import '../../widgets/home/nft_list_tile.dart';
 import 'package:asa_stats/screens/menu/menu_screen.dart' show launchURLApp;
 
 class ShowAllScreen extends StatefulWidget {

@@ -23,7 +23,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/body/chart_data_model.dart';
-import '../../models/response/values.dart';
 import '../../providers/asa_provider.dart';
 import '../../widgets/progressbar.dart';
 import '../../widgets/refresh_widget.dart';
