@@ -256,14 +256,15 @@ class _ASADataV2State extends State<ASADataV2> {
     // and ``<unit>/ALGO`` forms. ``PriceLineToggle`` is stateful so
     // the toggle state persists per row across rebuilds. Default form
     // is ``ALGO/<unit>`` (matches the website's balance-row default).
-    if (progType == 'Balance' &&
-        !isAlgo &&
-        (widget.item.price ?? 0.0) > 0 &&
-        asaUnit.isNotEmpty) {
+    //
+    // Phase 5c-fixes (round 5) — render the line even when ``price``
+    // is 0 (e.g. sub-microalgo prices the API truncates, like TRUMP);
+    // ``PriceLineToggle`` shows ``∞`` for that case.
+    if (progType == 'Balance' && !isAlgo && asaUnit.isNotEmpty) {
       rows.add(Padding(
         padding: const EdgeInsets.only(top: 3),
         child: PriceLineToggle(
-          price: widget.item.price!,
+          price: widget.item.price ?? 0.0,
           assetUnit: asaUnit,
           defaultInverted: false,
         ),
@@ -477,12 +478,12 @@ class DistributorWidgetV2 extends StatelessWidget {
           // the website's ``<span class="price">`` row, e.g.
           // "0.10966392 USDC/ALGO". Default form is ``<unit>/ALGO``
           // (inverted = 1/price); tap toggles to ``ALGO/<unit>``.
-          if ((item.price ?? 0.0) > 0 &&
-              asaUnit.isNotEmpty &&
-              asaUnit != 'ALGO') ...[
+          // Phase 5c-fixes (round 5) — render even when ``price`` is 0;
+          // ``PriceLineToggle`` shows ``∞`` for that case.
+          if (asaUnit.isNotEmpty && asaUnit != 'ALGO') ...[
             SizedBox(height: 4.h),
             PriceLineToggle(
-              price: item.price!,
+              price: item.price ?? 0.0,
               assetUnit: asaUnit,
               defaultInverted: true,
             ),
@@ -539,11 +540,31 @@ class _PriceLineToggleState extends State<PriceLineToggle> {
     // ``price`` is ALGO per 1 unit of asset.
     // Direct  : <price> ALGO/<unit>  ("1 unit costs <price> ALGO")
     // Inverted: <1/price> <unit>/ALGO  ("1 ALGO buys <1/price> units")
-    final value = _inverted ? (1.0 / widget.price) : widget.price;
+    //
+    // When the parent asset's price truncates to 0 (e.g. 6-decimal API
+    // serialization of a sub-microalgo price like ``$TRUMP``), only
+    // the inverted form is unrepresentable — ``1/0 = Infinity`` —
+    // and gets rendered as ``∞``. The direct form is shown as-is
+    // (e.g. ``0.00000000 ALGO/$TRUMP``) because that's the literal
+    // value the API delivered; the user can see the truncation and
+    // tap to flip to the more informative inverted form.
     final numerator = _inverted ? widget.assetUnit : 'ALGO';
     final denominator = _inverted ? 'ALGO' : widget.assetUnit;
-    final text =
-        '${AppConstants.formateNumber(value, points: '00000000')} $numerator/$denominator';
+    final String formatted;
+    if (_inverted) {
+      // Reciprocal — guard against 1/0 → Infinity and non-finite inputs.
+      if (widget.price == 0 || !widget.price.isFinite) {
+        formatted = '∞';
+      } else {
+        formatted =
+            AppConstants.formateNumber(1.0 / widget.price, points: '00000000');
+      }
+    } else {
+      // Direct — render the value as-is, including 0.
+      formatted =
+          AppConstants.formateNumber(widget.price, points: '00000000');
+    }
+    final text = '$formatted $numerator/$denominator';
     return GestureDetector(
       onTap: () => setState(() => _inverted = !_inverted),
       // ``HitTestBehavior.opaque`` makes the entire row tappable, not

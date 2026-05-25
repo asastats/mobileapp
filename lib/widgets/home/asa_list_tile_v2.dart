@@ -294,13 +294,35 @@ class _PricePerUnitV2State extends State<PricePerUnitV2> {
   String _getPrice() {
     final isAlgo =
         Provider.of<AppSettingProvider>(context).currency == Currency.algo;
-    var price = isAlgo
+    // Phase 5c-fixes — defensive handling for ``price == 0`` (e.g.
+    // sub-microalgo prices the API serializes truncated to 6 decimals,
+    // like ``$TRUMP``). The previous code did ``1 / price`` directly,
+    // producing ``double.infinity`` and then crashing
+    // ``AppConstants.formateNumber`` (its ``.split('.')`` returns
+    // ``["Infinity"]`` of length 1; ``parts[1]`` then raises
+    // ``RangeError``).
+    //
+    // The unconverted (default) display shows the literal price the
+    // API delivered, so ``0`` stays as ``0`` (correctly representing
+    // a sub-microalgo asset). Only the converted/reciprocal display
+    // collapses to ``∞``, where ``1/0`` would otherwise crash.
+    final rawPrice = isAlgo
         ? (widget.item.price ?? 1.0)
         : (widget.item.price ?? 1.0) / widget.usdValue;
-    if (_isPriceConverted) price = 1 / price;
     final unit = (_isPriceConverted ? '${widget.item.asset?.unit ?? ''}/' : '') +
         (isAlgo ? 'ALGO' : 'USD');
-    return '${AppConstants.formateNumber(price, points: '000000')} $unit';
+    final String formatted;
+    if (_isPriceConverted) {
+      if (rawPrice == 0 || !rawPrice.isFinite) {
+        formatted = '∞';
+      } else {
+        formatted =
+            AppConstants.formateNumber(1.0 / rawPrice, points: '000000');
+      }
+    } else {
+      formatted = AppConstants.formateNumber(rawPrice, points: '000000');
+    }
+    return '$formatted $unit';
   }
 
   @override
