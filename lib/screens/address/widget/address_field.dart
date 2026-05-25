@@ -5,7 +5,6 @@ import 'package:asa_stats/widgets/auto_complete_textfield/src/flutter_typeahead.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../../../config/app_constants.dart';

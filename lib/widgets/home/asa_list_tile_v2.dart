@@ -19,7 +19,6 @@
 import 'package:asa_stats/config/app_constants.dart';
 import 'package:asa_stats/config/color.dart';
 import 'package:asa_stats/config/dimensions.dart';
-import 'package:asa_stats/config/extensions.dart';
 import 'package:asa_stats/config/images.dart';
 import 'package:asa_stats/data/repository/app_setting_repo.dart';
 import 'package:asa_stats/models/v2/v2.dart' as v2;

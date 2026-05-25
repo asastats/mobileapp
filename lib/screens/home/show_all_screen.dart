@@ -27,7 +27,6 @@ import 'package:asa_stats/widgets/home/not_eval_list_tile.dart';
 import 'package:asa_stats/widgets/progressbar.dart';
 import 'package:asa_stats/widgets/refresh_widget.dart';
 import 'package:asa_stats/widgets/theme_search_field.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

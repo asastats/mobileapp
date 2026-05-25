@@ -1,4 +1,3 @@
-import 'package:asa_stats/config/app_constants.dart';
 import 'package:asa_stats/config/color.dart';
 import 'package:asa_stats/config/dimensions.dart';
 import 'package:asa_stats/config/images.dart';
@@ -10,7 +9,6 @@ import 'package:asa_stats/widgets/app_bar.dart';
 import 'package:asa_stats/widgets/theme_dialog.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class SettingScreen extends StatefulWidget {

@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:asa_stats/config/color.dart';
 import 'package:asa_stats/screens/menu/menu_screen.dart';
 import 'package:flutter/material.dart';
