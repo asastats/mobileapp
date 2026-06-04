@@ -182,16 +182,39 @@ class _ASADataV2State extends State<ASADataV2> {
     final rows = <Widget>[];
 
     // 1. The program value (always present).
-    rows.add(Text(
-      '${displayValue.toStringAsFixed(2)} $displayUnit',
-      textAlign: TextAlign.end,
-      style: TextStyle(
-        color: ColorResources.themeTextColor(context),
-        fontSize: Dimensions.FONT_SIZE_SMALL,
-        fontWeight: FontWeight.w700,
-        fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
-      ),
-    ));
+    //
+    // Phase 5d-fixes (round 10) — negative-value programs (Borrowed,
+    // Loss, Debt) render the value in parens with red text, matching
+    // the website's ``myred-text`` styling on the same kind of row.
+    // The minus sign stays in the rendered string (e.g. "(-0.00 ALGO)")
+    // alongside the parens + red so the negative semantics are
+    // unmistakable. Detect by sign on ``progValue`` (the ALGO value);
+    // applies in both ALGO and USD currency modes since a borrow stays
+    // a borrow in either unit.
+    final bool isNegative = progValue < 0;
+    if (isNegative) {
+      rows.add(Text(
+        '(${displayValue.toStringAsFixed(2)} $displayUnit)',
+        textAlign: TextAlign.end,
+        style: TextStyle(
+          color: ColorResources.redColor,
+          fontSize: Dimensions.FONT_SIZE_SMALL,
+          fontWeight: FontWeight.w700,
+          fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+        ),
+      ));
+    } else {
+      rows.add(Text(
+        '${displayValue.toStringAsFixed(2)} $displayUnit',
+        textAlign: TextAlign.end,
+        style: TextStyle(
+          color: ColorResources.themeTextColor(context),
+          fontSize: Dimensions.FONT_SIZE_SMALL,
+          fontWeight: FontWeight.w700,
+          fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+        ),
+      ));
+    }
 
     // 2. Program name+code link (or span when no URL).
     if (progName != null) {
@@ -228,12 +251,25 @@ class _ASADataV2State extends State<ASADataV2> {
     // old version. ``Balance`` is the key value users look for, so the
     // visual cue draws attention. Other program types (Added, Locked,
     // Deposited, etc.) render with no background.
-    if (!isAlgo && progAmount != null && progAmount > 0 && progType != null) {
+    //
+    // Phase 5d-fixes (round 10) — negative-amount programs (Borrowed,
+    // Loss, Debt) render the amount in parens with red text. The
+    // ``progType:`` label stays plain; the parens + red wrap only the
+    // numeric+unit, matching the website's row layout. The minus sign
+    // stays in the formatted number (e.g. "Borrowed:(-10.092956 GARD)")
+    // alongside the parens + red so the negative semantics are
+    // unmistakable. The previous ``progAmount > 0`` gate was making
+    // negatives disappear entirely from the UI — now ``progAmount != 0``
+    // lets them through, and we route to ``_negativeAmountRow`` for the
+    // rendering.
+    if (!isAlgo && progAmount != null && progAmount != 0 && progType != null) {
       final formatted = AppConstants.formateNumber(
         double.parse(formateAmount(progAmount, decimals, 6)),
         points: '000000',
       );
-      if (progType == 'Balance') {
+      if (progAmount < 0) {
+        rows.add(_negativeAmountRow(progType, formatted, asaUnit));
+      } else if (progType == 'Balance') {
         rows.add(_balanceRow(formatted, asaUnit));
       } else {
         rows.add(_textRow('$progType: $formatted $asaUnit'));
@@ -298,6 +334,43 @@ class _ASADataV2State extends State<ASADataV2> {
               text: ' $formatted $asaUnit',
               style: TextStyle(
                 color: ColorResources.themeTextColor(context),
+                fontSize: Dimensions.FONT_SIZE_SMALL,
+                fontWeight: FontWeight.w600,
+                fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Negative-amount row used by Borrowed / Loss / Debt programs.
+  /// Renders as ``<Type>:(<abs_amount> <unit>)`` with the parens+amount+
+  /// unit painted in ``ColorResources.redColor``; the label stays in the
+  /// normal theme text color. Mirrors the website's
+  /// ``<span>Borrowed:</span>(<span class="myred-text">AMOUNT UNIT</span><span>)</span>``
+  /// row structure from ``snippets/asas/program.html``.
+  Widget _negativeAmountRow(String progType, String formatted, String asaUnit) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: RichText(
+        textAlign: TextAlign.end,
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$progType: ',
+              style: TextStyle(
+                color: ColorResources.themeTextColor(context),
+                fontSize: Dimensions.FONT_SIZE_SMALL,
+                fontWeight: FontWeight.w600,
+                fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
+              ),
+            ),
+            TextSpan(
+              text: '($formatted $asaUnit)',
+              style: TextStyle(
+                color: ColorResources.redColor,
                 fontSize: Dimensions.FONT_SIZE_SMALL,
                 fontWeight: FontWeight.w600,
                 fontFamily: AppConstants.FONT_FAMILY_OUTFIT,
