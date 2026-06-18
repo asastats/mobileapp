@@ -68,19 +68,25 @@ class AppConstants {
 
   static const int HOME_INDEX = 9;
   static const int ADDRESS_INDEX = 0;
-  // static const int HOME_INDEX = 0;
-  // static const int HOME_INDEX = 0;
+
+  // Image-asset CDN. ASA icons, NFT thumbnails, and provider logos
+  // all moved from ``https://www.asastats.com/static/<path>`` to
+  // ``https://cdn.asastats.com/<path>`` — the per-path layout stayed
+  // the same, only the host changed. The API still returns NFT
+  // ``image`` / ``thumbnail`` fields with a leading slash
+  // (``/thumbnails/<bucket>/<id>.png``), so plain concatenation works.
+  static const String CDN_BASE = "https://cdn.asastats.com";
 
   static String getAsaImage(String id) {
-    return "https://www.asastats.com/static/icons/${id}t.png";
+    return "$CDN_BASE/icons/${id}t.png";
   }
 
   static String getProviderImage(String id) {
-    return "https://www.asastats.com/static/icons/providers/$id.png";
+    return "$CDN_BASE/icons/providers/$id.png";
   }
 
   static String getNFTImage(String path) {
-    return "https://www.asastats.com/static$path";
+    return "$CDN_BASE$path";
   }
 
   static Future<Map<String, dynamic>> readGlobalJsonFile(
