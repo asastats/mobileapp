@@ -141,12 +141,17 @@ class _ASAListTileV2State extends State<ASAListTileV2> {
   }
 
   Widget _asaInfo() {
-    // Total-supply rendering: v2 stores ``total`` as int (micro-units),
-    // v1 stored it as String (display-formatted with decimals already
-    // baked in). To preserve the visible rendering, divide by
-    // ``10^decimals`` and format. Strip trailing zeros so common cases
-    // like USDC's 18B supply render as "18,000,000,000" not
-    // "18,000,000,000.0000".
+    // Total-supply rendering: v2 delivers ``total`` as an int in the
+    // same semantics v1 used — human units, decimals already baked in
+    // — so we format it directly without dividing by ``10^decimals``.
+    // Strip trailing zeros so common cases like USDC's 18B supply
+    // render as "18,000,000,000" not "18,000,000,000.0000".
+    //
+    // Phase 5d-fixes (round 14) — Removed an errant ``/ 10^decimals``
+    // that was making values 10^decimals too small (a 1-trillion-supply
+    // memecoin at decimals=6 was showing as "1,000,000"). The mistake
+    // came from a wrong assumption that v2 stores ``total`` in
+    // chain/micro units; it actually preserves the v1 semantics.
     final supplyString = _formattedTotalSupply();
 
     return Column(
@@ -203,26 +208,9 @@ class _ASAListTileV2State extends State<ASAListTileV2> {
   String _formattedTotalSupply() {
     final total = _asset.total;
     if (total == null) return '';
-    final decimals = _asset.decimals ?? 0;
-    // ``int / pow(10, n)`` is exact for typical asset totals; the
-    // potential precision loss at huge supplies (>2^53) is acceptable
-    // since we're producing display text, not arithmetic input.
-    final scale = _pow10(decimals);
-    final value = total / scale;
     return NumberFormat('#,##0.0000')
-        .format(value)
+        .format(total)
         .replaceAll(RegExp(r'\.000*$'), '');
-  }
-
-  /// Integer power of ten without importing dart:math just for this.
-  /// Caps at 10^18 since Algorand assets max out at decimals=19 but
-  /// in practice never exceed 8.
-  double _pow10(int n) {
-    var v = 1.0;
-    for (var i = 0; i < n; i++) {
-      v *= 10.0;
-    }
-    return v;
   }
 
   Widget _providers() {

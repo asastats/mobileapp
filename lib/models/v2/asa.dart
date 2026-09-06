@@ -16,9 +16,11 @@ class Asa {
   /// the missing-unit case the same as the empty-unit case.
   final String unit;
 
-  /// Asset's total supply in micro-units (so 1 USDC supply of 18B is
-  /// reported as 18000000000_000000). Surface as ``int`` not ``double``
-  /// because some assets have ``total > 2^53``.
+  /// Asset's total supply as declared by the API (decimals already
+  /// baked in — same semantics as v1). E.g. an 18-billion supply
+  /// asset comes through as ``18000000000``, not ``18000000000_000000``.
+  /// Surfaced as ``int`` not ``double`` because some totals exceed
+  /// ``2^53``.
   final int? total;
 
   final int? decimals;
