@@ -39,7 +39,7 @@ android {
     defaultConfig {
         applicationId = "com.asastats.app"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         compileSdk = 36
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
